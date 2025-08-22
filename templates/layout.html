@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}App de Indicadores{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('home') }}" class="brand">Indicadores</a>
+        <div class="nav-links">
+            {% if session.user %}
+                <a href="{{ url_for('home') }}">Home</a>
+                
+                {% if session.user.role in ['admin', 'comercial', 'diretoria'] %}
+                    <a href="{{ url_for('setor_comercial') }}">Comercial</a>
+                {% endif %}
+
+                {% if session.user.role in ['admin', 'financeiro', 'diretoria'] %}
+                    <a href="{{ url_for('setor_financeiro') }}">Financeiro</a>
+                {% endif %}
+
+                {% if session.user.role == 'admin' %}
+                    <a href="{{ url_for('manage_users') }}">Admin</a>
+                {% endif %}
+
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
