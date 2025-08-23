@@ -38,7 +38,7 @@
         <button type="submit" class="btn">
             {% if action == 'create' %}Criar Usuário{% else %}Salvar Alterações{% endif %}
         </button>
-        <a href="{{ url_for('manage_users') }}" class="btn btn-secondary">Cancelar</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancelar</a>
     </div>
 </form>
 {% endblock %}

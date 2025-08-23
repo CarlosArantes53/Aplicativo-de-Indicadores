@@ -6,7 +6,7 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user' not in session:
             flash('Você precisa estar logado para ver esta página.', 'warning')
-            return redirect(url_for('login'))
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -16,30 +16,16 @@ def roles_required(allowed_roles):
         def decorated_function(*args, **kwargs):
             if 'user' not in session:
                 flash('Você precisa estar logado para ver esta página.', 'warning')
-                return redirect(url_for('login'))
+                return redirect(url_for('auth.login'))
             
             user_role = session.get('user', {}).get('role')
             if user_role not in allowed_roles:
                 flash('Você não tem permissão para acessar esta página.', 'danger')
-                return redirect(url_for('home'))
+                return redirect(url_for('main.home'))
             
             return f(*args, **kwargs)
         return decorated_function
     return decorator
 
-# Manteremos o admin_required para facilitar, embora roles_required já o cubra
 def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user' not in session:
-            flash('Acesso negado. Faça login primeiro.', 'danger')
-            return redirect(url_for('login'))
-        
-        user_role = session.get('user', {}).get('role')
-        
-        if user_role != 'admin':
-            flash('Você não tem permissão para acessar esta página.', 'danger')
-            return redirect(url_for('home'))
-            
-        return f(*args, **kwargs)
-    return decorated_function
+    return roles_required(['admin'])(f)

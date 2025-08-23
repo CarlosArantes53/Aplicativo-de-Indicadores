@@ -11,7 +11,6 @@ def get_user_data(uid, token):
 def get_all_users(token):
     try:
         users = db.child("users").get(token=token)
-        # Retorna um dicionário vazio se não houver usuários
         return {user.key(): user.val() for user in users.each()} if users.val() else {}
     except Exception as e:
         print(f"Erro ao buscar todos os usuários: {e}")
@@ -25,7 +24,6 @@ def create_user_with_role(email, password, role, admin_token):
         db.child("users").child(uid).set(user_data, token=admin_token)
         return user
     except Exception as e:
-        # Repassa a exceção para que a rota possa tratá-la
         raise e
 
 def update_user_role(uid, role, token):

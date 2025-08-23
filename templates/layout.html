@@ -8,26 +8,26 @@
 </head>
 <body>
     <nav class="navbar">
-        <a href="{{ url_for('home') }}" class="brand">Indicadores</a>
+        <a href="{{ url_for('main.home') }}" class="brand">Indicadores</a>
         <div class="nav-links">
             {% if session.user %}
-                <a href="{{ url_for('home') }}">Home</a>
+                <a href="{{ url_for('main.home') }}">Home</a>
                 
                 {% if session.user.role in ['admin', 'comercial', 'diretoria'] %}
-                    <a href="{{ url_for('setor_comercial') }}">Comercial</a>
+                    <a href="{{ url_for('main.setor_comercial') }}">Comercial</a>
                 {% endif %}
 
                 {% if session.user.role in ['admin', 'financeiro', 'diretoria'] %}
-                    <a href="{{ url_for('setor_financeiro') }}">Financeiro</a>
+                    <a href="{{ url_for('main.setor_financeiro') }}">Financeiro</a>
                 {% endif %}
 
                 {% if session.user.role == 'admin' %}
-                    <a href="{{ url_for('manage_users') }}">Admin</a>
+                    <a href="{{ url_for('admin.manage_users') }}">Admin</a>
                 {% endif %}
 
-                <a href="{{ url_for('logout') }}">Logout</a>
+                <a href="{{ url_for('auth.logout') }}">Logout</a>
             {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('auth.login') }}">Login</a>
             {% endif %}
         </div>
     </nav>
