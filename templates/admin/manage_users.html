@@ -11,7 +11,7 @@
             <thead>
                 <tr>
                     <th>Email</th>
-                    <th>Nível (Role)</th>
+                    <th>Setores (Roles)</th>
                     <th>Ações</th>
                 </tr>
             </thead>
@@ -19,7 +19,13 @@
                 {% for uid, user_data in users.items() %}
                 <tr>
                     <td>{{ user_data.email }}</td>
-                    <td>{{ user_data.role }}</td>
+                    <td>
+                        {% if user_data.roles %}
+                            {{ user_data.roles.keys()|join(', ') }}
+                        {% else %}
+                            Nenhum
+                        {% endif %}
+                    </td>
                     <td>
                         <a href="{{ url_for('admin.edit_user', uid=uid) }}">Editar</a>
                     </td>

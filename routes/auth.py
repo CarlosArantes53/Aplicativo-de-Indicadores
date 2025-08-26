@@ -26,7 +26,7 @@ def login():
                 'uid': uid,
                 'email': user_auth_data['email'],
                 'idToken': id_token,
-                'role': user_db_data.get('role', 'default') if user_db_data else 'default'
+                'roles': user_db_data.get('roles', {}) if user_db_data else {}
             }
             return redirect(url_for('main.home'))
         except Exception as e:

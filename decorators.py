@@ -18,8 +18,9 @@ def roles_required(allowed_roles):
                 flash('Você precisa estar logado para ver esta página.', 'warning')
                 return redirect(url_for('auth.login'))
             
-            user_role = session.get('user', {}).get('role')
-            if user_role not in allowed_roles:
+            user_roles = session.get('user', {}).get('roles', {})
+            # Verifica se o usuário tem pelo menos uma das roles permitidas
+            if not any(role in user_roles for role in allowed_roles):
                 flash('Você não tem permissão para acessar esta página.', 'danger')
                 return redirect(url_for('main.home'))
             

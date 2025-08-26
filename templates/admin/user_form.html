@@ -24,14 +24,34 @@
     {% endif %}
 
     <div class="input-group">
-        <label for="role">Nível de Acesso:</label>
-        <select id="role" name="role" required>
-            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
-            <option value="diretoria" {% if user.role == 'diretoria' %}selected{% endif %}>Diretoria</option>
-            <option value="comercial" {% if user.role == 'comercial' %}selected{% endif %}>Comercial</option>
-            <option value="financeiro" {% if user.role == 'financeiro' %}selected{% endif %}>Financeiro</option>
-            <option value="default" {% if user.role == 'default' %}selected{% endif %}>Padrão (sem acesso)</option>
+        <label for="roles">Setores:</label>
+        <select id="roles" name="roles" multiple required>
+            <option value="admin" {% if 'admin' in user.roles %}selected{% endif %}>Admin</option>
+            <option value="diretoria" {% if 'diretoria' in user.roles %}selected{% endif %}>Diretoria</option>
+            <option value="comercial" {% if 'comercial' in user.roles %}selected{% endif %}>Comercial</option>
+            <option value="financeiro" {% if 'financeiro' in user.roles %}selected{% endif %}>Financeiro</option>
+            <option value="default" {% if 'default' in user.roles %}selected{% endif %}>Padrão (sem acesso)</option>
         </select>
+    </div>
+
+    <div class="input-group">
+        <label for="codigo_vendedor">Código Vendedor:</label>
+        <input type="text" id="codigo_vendedor" name="codigo_vendedor" value="{{ user.codigo_vendedor if user else '' }}">
+    </div>
+
+    <div class="input-group">
+        <label for="nome_vendedor">Nome Vendedor:</label>
+        <input type="text" id="nome_vendedor" name="nome_vendedor" value="{{ user.nome_vendedor if user else '' }}">
+    </div>
+
+    <div class="input-group">
+        <label for="codigo_sap">Código SAP:</label>
+        <input type="text" id="codigo_sap" name="codigo_sap" value="{{ user.codigo_sap if user else '' }}">
+    </div>
+
+    <div class="input-group">
+        <label for="nome_sap">Nome SAP:</label>
+        <input type="text" id="nome_sap" name="nome_sap" value="{{ user.nome_sap if user else '' }}">
     </div>
 
     <div class="form-actions">
