@@ -4,10 +4,17 @@
 
 {% block content %}
     <h1>Painel do Setor Comercial</h1>
-    <p>Aqui serão exibidos os gráficos e indicadores de Vendas, Metas, etc.</p>
-    
-    <div class="chart-placeholder">
-        <h2>Vendas Mensais</h2>
-        <p>[Gráfico de barras aqui]</p>
+
+    <div class="sub-nav">
+        <a href="{{ url_for('main.comercial_geral') }}">Geral</a>
+        <a href="{{ url_for('main.comercial_conversao') }}">Conversão de Vendas</a>
+        <a href="{{ url_for('main.comercial_cancelamentos') }}">Cancelamentos</a>
+        <a href="{{ url_for('main.comercial_metas') }}">Metas</a>
+    </div>
+
+    <div class="sub-content">
+        {% block comercial_content %}
+            <p>Selecione uma subpágina no menu acima.</p>
+        {% endblock %}
     </div>
 {% endblock %}

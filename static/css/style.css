@@ -249,3 +249,93 @@ footer.footer {
     bottom: 0;
     width: 100%;
 }
+.sub-nav {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+}
+
+.sub-nav a {
+    margin-right: 1.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease-in-out;
+}
+
+.sub-nav a:hover, .sub-nav a.active {
+    color: var(--accent-color);
+}
+
+.sub-content {
+    margin-top: 1.5rem;
+}/* ... (código CSS existente) ... */
+
+/* Estilos de KPI */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.kpi-card {
+    background-color: var(--secondary-bg);
+    border-left: 5px solid var(--accent-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--box-shadow);
+}
+
+.kpi-card h3 {
+    margin-top: 0;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.kpi-card.nf-saida { border-color: #3b82f6; }
+.kpi-card.cancelamentos { border-color: #f59e0b; }
+.kpi-card.devolucoes { border-color: #ef4444; }
+.kpi-card.faturamento-liquido { border-color: #10b981; }
+
+.kpi-values {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    margin-top: 1rem;
+}
+
+.kpi-values div {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-values .label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.kpi-values .value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+/* Estilos do Filtro */
+.filter-container form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem;
+    background-color: var(--secondary-bg);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+}
+
+.filter-container .input-group {
+    margin-bottom: 0;
+}

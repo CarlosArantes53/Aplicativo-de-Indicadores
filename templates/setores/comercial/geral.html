@@ -1,0 +1,104 @@
+{% extends "setores/comercial.html" %}
+
+{% block comercial_content %}
+    <div class="filter-container">
+        <form method="GET" action="{{ url_for('main.comercial_geral') }}">
+            <div class="input-group">
+                <label for="start_date">Data Inicial:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}">
+            </div>
+            <div class="input-group">
+                <label for="end_date">Data Final:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}">
+            </div>
+            <button type="submit" class="btn">Filtrar</button>
+        </form>
+    </div>
+
+    {% if kpis %}
+    <div class="kpi-grid">
+        {% set nf_saida = kpis.get('NOTA FISCAL DE SAÍDA') %}
+        {% if nf_saida %}
+        <div class="kpi-card nf-saida">
+            <h3>{{ nf_saida.TipoNs }}</h3>
+            <div class="kpi-values">
+                <div>
+                    <span class="label">Valor</span>
+                    <span class="value">{{ nf_saida.Valor_fmt }}</span>
+                </div>
+                <div>
+                    <span class="label">Peso</span>
+                    <span class="value">{{ nf_saida.Peso_fmt }}</span>
+                </div>
+                <div>
+                    <span class="label">Quantidade</span>
+                    <span class="value">{{ nf_saida.Quantidade_fmt }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% set cancelamentos = kpis.get('CANCELAMENTO') %}
+        {% if cancelamentos %}
+        <div class="kpi-card cancelamentos">
+            <h3>{{ cancelamentos.TipoNs }}</h3>
+            <div class="kpi-values">
+                <div>
+                    <span class="label">Valor</span>
+                    <span class="value">{{ cancelamentos.Valor_fmt }}</span>
+                </div>
+                <div>
+                    <span class="label">Peso</span>
+                    <span class="value">{{ cancelamentos.Peso_fmt }}</span>
+                </div>
+                 <div>
+                    <span class="label">Quantidade</span>
+                    <span class="value">{{ cancelamentos.Quantidade_fmt }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% set devolucoes = kpis.get('DEVOLUÇÃO') %}
+        {% if devolucoes %}
+        <div class="kpi-card devolucoes">
+            <h3>{{ devolucoes.TipoNs }}</h3>
+            <div class="kpi-values">
+                <div>
+                    <span class="label">Valor</span>
+                    <span class="value">{{ devolucoes.Valor_fmt }}</span>
+                </div>
+                <div>
+                    <span class="label">Peso</span>
+                    <span class="value">{{ devolucoes.Peso_fmt }}</span>
+                </div>
+                 <div>
+                    <span class="label">Quantidade</span>
+                    <span class="value">{{ devolucoes.Quantidade_fmt }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% set faturamento = kpis.get('FATURAMENTO LÍQUIDO') %}
+        {% if faturamento %}
+        <div class="kpi-card faturamento-liquido">
+            <h3>{{ faturamento.TipoNs }}</h3>
+            <div class="kpi-values">
+                <div>
+                    <span class="label">Valor</span>
+                    <span class="value">{{ faturamento.Valor_fmt }}</span>
+                </div>
+                <div>
+                    <span class="label">Peso</span>
+                    <span class="value">{{ faturamento.Peso_fmt }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+        <div class="alert alert-info">Nenhum dado para exibir no período selecionado.</div>
+    {% endif %}
+
+{% endblock %}
