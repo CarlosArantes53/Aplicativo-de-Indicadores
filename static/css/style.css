@@ -269,9 +269,8 @@ footer.footer {
 
 .sub-content {
     margin-top: 1.5rem;
-}/* ... (código CSS existente) ... */
+}
 
-/* Estilos de KPI */
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -289,6 +288,7 @@ footer.footer {
 
 .kpi-card h3 {
     margin-top: 0;
+    margin-bottom: 1rem;
     font-size: 1rem;
     font-weight: bold;
     text-transform: uppercase;
@@ -300,31 +300,24 @@ footer.footer {
 .kpi-card.devolucoes { border-color: #ef4444; }
 .kpi-card.faturamento-liquido { border-color: #10b981; }
 
-.kpi-values {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.2rem;
-    margin-top: 1rem;
-}
-
-.kpi-values div {
-    display: flex;
-    flex-direction: column;
-}
-
-.kpi-values .label {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.25rem;
-}
-
-.kpi-values .value {
-    font-size: 1.4rem;
-    font-weight: bold;
+.kpi-main-value {
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--text-primary);
+    margin-bottom: 1rem;    
+    line-height: 1.2;
 }
 
-/* Estilos do Filtro */
+.kpi-secondary-values {
+    display: flex;
+    justify-content: space-between;
+    align-items: right;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .filter-container form {
     display: flex;
     flex-wrap: wrap;

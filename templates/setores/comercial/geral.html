@@ -21,19 +21,10 @@
         {% if nf_saida %}
         <div class="kpi-card nf-saida">
             <h3>{{ nf_saida.TipoNs }}</h3>
-            <div class="kpi-values">
-                <div>
-                    <span class="label">Valor</span>
-                    <span class="value">{{ nf_saida.Valor_fmt }}</span>
-                </div>
-                <div>
-                    <span class="label">Peso</span>
-                    <span class="value">{{ nf_saida.Peso_fmt }}</span>
-                </div>
-                <div>
-                    <span class="label">Quantidade</span>
-                    <span class="value">{{ nf_saida.Quantidade_fmt }}</span>
-                </div>
+            <div class="kpi-main-value">{{ nf_saida.Valor_fmt }}</div>
+            <div class="kpi-secondary-values">
+                <span><strong>Peso:</strong> {{ nf_saida.Peso_fmt }}</span>
+                <span><strong>Quantidade:</strong> {{ nf_saida.Quantidade_fmt }}</span>
             </div>
         </div>
         {% endif %}
@@ -42,19 +33,10 @@
         {% if cancelamentos %}
         <div class="kpi-card cancelamentos">
             <h3>{{ cancelamentos.TipoNs }}</h3>
-            <div class="kpi-values">
-                <div>
-                    <span class="label">Valor</span>
-                    <span class="value">{{ cancelamentos.Valor_fmt }}</span>
-                </div>
-                <div>
-                    <span class="label">Peso</span>
-                    <span class="value">{{ cancelamentos.Peso_fmt }}</span>
-                </div>
-                 <div>
-                    <span class="label">Quantidade</span>
-                    <span class="value">{{ cancelamentos.Quantidade_fmt }}</span>
-                </div>
+            <div class="kpi-main-value">{{ cancelamentos.Valor_fmt }}</div>
+            <div class="kpi-secondary-values">
+                <span><strong>Peso:</strong> {{ cancelamentos.Peso_fmt }}</span>
+                <span><strong>Quantidade:</strong> {{ cancelamentos.Quantidade_fmt }}</span>
             </div>
         </div>
         {% endif %}
@@ -63,19 +45,10 @@
         {% if devolucoes %}
         <div class="kpi-card devolucoes">
             <h3>{{ devolucoes.TipoNs }}</h3>
-            <div class="kpi-values">
-                <div>
-                    <span class="label">Valor</span>
-                    <span class="value">{{ devolucoes.Valor_fmt }}</span>
-                </div>
-                <div>
-                    <span class="label">Peso</span>
-                    <span class="value">{{ devolucoes.Peso_fmt }}</span>
-                </div>
-                 <div>
-                    <span class="label">Quantidade</span>
-                    <span class="value">{{ devolucoes.Quantidade_fmt }}</span>
-                </div>
+            <div class="kpi-main-value">{{ devolucoes.Valor_fmt }}</div>
+            <div class="kpi-secondary-values">
+                <span><strong>Peso:</strong> {{ devolucoes.Peso_fmt }}</span>
+                <span><strong>Quantidade:</strong> {{ devolucoes.Quantidade_fmt }}</span>
             </div>
         </div>
         {% endif %}
@@ -84,15 +57,10 @@
         {% if faturamento %}
         <div class="kpi-card faturamento-liquido">
             <h3>{{ faturamento.TipoNs }}</h3>
-            <div class="kpi-values">
-                <div>
-                    <span class="label">Valor</span>
-                    <span class="value">{{ faturamento.Valor_fmt }}</span>
-                </div>
-                <div>
-                    <span class="label">Peso</span>
-                    <span class="value">{{ faturamento.Peso_fmt }}</span>
-                </div>
+            <div class="kpi-main-value">{{ faturamento.Valor_fmt }}</div>
+            <div class="kpi-secondary-values">
+                <span><strong>Peso:</strong> {{ faturamento.Peso_fmt }}</span>
+                <span><strong>Quantidade:</strong> {{ faturamento.Quantidade_fmt }}</span>
             </div>
         </div>
         {% endif %}

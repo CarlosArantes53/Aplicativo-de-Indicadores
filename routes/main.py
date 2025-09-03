@@ -19,19 +19,19 @@ def setor_comercial():
 @main_bp.route('/setor/comercial/geral')
 @roles_required(allowed_roles=['admin', 'comercial', 'diretoria'])
 def comercial_geral():
-    # Define as datas padrão (mês anterior)
+    
     today = date.today()
     first_day_prev_month = (today.replace(day=1) - relativedelta(months=1))
     last_day_prev_month = (today.replace(day=1) - relativedelta(days=1))
 
-    # Pega as datas da requisição ou usa o padrão
+    
     start_date_str = request.args.get('start_date', default=first_day_prev_month.strftime('%Y-%m-%d'))
     end_date_str = request.args.get('end_date', default=last_day_prev_month.strftime('%Y-%m-%d'))
 
-    # Chama a função de serviço para obter os KPIs
+    
     kpis, error = calculate_commercial_kpis(start_date_str, end_date_str)
 
-    # Se houver um erro, exibe uma mensagem para o usuário
+    
     if error:
         flash(error, "danger")
 
@@ -40,7 +40,7 @@ def comercial_geral():
                            start_date=start_date_str, 
                            end_date=end_date_str)
 
-# --- Demais rotas permanecem inalteradas ---
+
 @main_bp.route('/setor/comercial/conversao')
 @roles_required(allowed_roles=['admin', 'comercial', 'diretoria'])
 def comercial_conversao():
