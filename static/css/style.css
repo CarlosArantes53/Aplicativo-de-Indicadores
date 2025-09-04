@@ -6,7 +6,7 @@
     --text-secondary: #cbd5e0;
     --border-color: #4a5568;
     --accent-color: #EFB410;
-    --accent-text-color: #090a0c; /* Cor do texto para botões de destaque */
+    --accent-text-color: #090a0c;
     --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     --inset-shadow: 1px 1px 2px rgba(255, 255, 255, 0.04), -1px -1px 2px rgba(0, 0, 0, 0.2);
     --border-radius: 0.75rem;
@@ -90,7 +90,6 @@ body {
     line-height: 1;
 }
 
-/* Melhoria: Box de contorno com efeito 3D suave */
 .box-container {
     background-color: var(--secondary-bg);
     border: 1px solid var(--border-color);
@@ -144,18 +143,17 @@ main.container {
     padding: 0.8rem;
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
-    background-color: var(--primary-bg); /* Fundo sutilmente diferente */
+    background-color: var(--primary-bg);
     color: var(--text-primary);
     box-sizing: border-box;
     transition: background-color 0.3s;
 }
 
-/* Melhoria: Botões com melhor contraste */
 .btn {
     display: inline-block;
     padding: 0.9rem 1.5rem;
     background-color: var(--accent-color);
-    color: var(--accent-text-color); /* Cor de texto dinâmica */
+    color: var(--accent-text-color);
     border: none;
     border-radius: var(--border-radius);
     cursor: pointer;
@@ -177,13 +175,13 @@ main.container {
 
 .btn-secondary:hover {
     background-color: #718096;
-    filter: brightness(1); /* Reset filter for secondary */
+    filter: brightness(1);
 }
 
 .table-users {
     width: 100%;
     margin-top: 2rem;
-    border-collapse: separate; /* Required for border-radius on cells */
+    border-collapse: separate;
     border-spacing: 0;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -300,7 +298,6 @@ footer.footer {
 .kpi-card.devolucoes { border-color: #ef4444; }
 .kpi-card.faturamento-liquido { border-color: #10b981; }
 
-/* Força cada valor (Peso / Quantidade) a ficar em sua própria linha */
 .kpi-secondary-values {
     display: flex;
     flex-direction: column;
@@ -310,7 +307,6 @@ footer.footer {
     color: var(--text-secondary);
 }
 
-/* garante que o conteúdo não quebre em várias linhas inesperadamente */
 .kpi-secondary-values span {
     display: block;
     white-space: nowrap;
@@ -318,7 +314,6 @@ footer.footer {
     text-overflow: ellipsis;
 }
 
-/* Se quiser um estilo mais compacto para o valor principal */
 .kpi-main-value {
     font-size: 1.15rem;
     font-weight: 800;
@@ -328,18 +323,50 @@ footer.footer {
     white-space: nowrap;
 }
 
-
-.filter-container form {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 1rem;
+.filter-container {
     background-color: var(--secondary-bg);
-    padding: 1rem;
-    border-radius: var(--border-radius);
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
     margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.filter-container .input-group {
-    margin-bottom: 0;
+.date-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.date-filter-form .form-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-filter-form label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.date-filter-form input[type="date"] {
+    background-color: var(--main-bg);
+    border: 1px solid var(--grid-color, #DDD);
+    border-radius: 5px;
+    color: var(--text-primary);
+    padding: 0.5rem;
+}
+
+.btn-filter {
+    background-color: #ebd774;
+    color: #023047;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.btn-filter:hover {
+    background-color: #f0de8a;
 }

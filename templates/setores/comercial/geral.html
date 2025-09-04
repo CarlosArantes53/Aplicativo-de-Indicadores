@@ -2,18 +2,19 @@
 
 {% block comercial_content %}
     <div class="filter-container">
-        <form method="GET" action="{{ url_for('main.comercial_geral') }}">
-            <div class="input-group">
+        <form action="" method="GET" class="date-filter-form">
+            <div class="form-group">
                 <label for="start_date">Data Inicial:</label>
-                <input type="date" id="start_date" name="start_date" value="{{ start_date }}">
+                <input type="date" id="start_date" name="start_date" value="{{ request.args.get('start_date', '') }}">
             </div>
-            <div class="input-group">
+            <div class="form-group">
                 <label for="end_date">Data Final:</label>
-                <input type="date" id="end_date" name="end_date" value="{{ end_date }}">
+                <input type="date" id="end_date" name="end_date" value="{{ request.args.get('end_date', '') }}">
             </div>
-            <button type="submit" class="btn">Filtrar</button>
+            <button type="submit" class="btn-filter">Filtrar</button>
         </form>
     </div>
+
 
     {% if kpis %}
     <div class="kpi-grid">
@@ -75,10 +76,27 @@
     </div>
     {% endif %}
 
+
+    {% if chart_data and chart_data.preco_kg_data and chart_data.desconto_data %}
+    <div class="charts-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem;">
+        <div class="box-container" style="padding: 1.5rem;">
+            <h3 style="margin-top:0; text-align: center; color: var(--text-secondary);">Preço Médio por KG (R$)</h3>
+            <div style="position: relative; height: 35vh; width: 100%;">
+                <canvas id="precoKgChart"></canvas>
+            </div>
+        </div>
+        <div class="box-container" style="padding: 1.5rem;">
+            <h3 style="margin-top:0; text-align: center; color: var(--text-secondary);">Desconto Médio (%)</h3>
+            <div style="position: relative; height: 35vh; width: 100%;">
+                <canvas id="descontoChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {% else %}
         <div class="alert alert-info">Nenhum dado para exibir no período selecionado.</div>
     {% endif %}
-
 {% endblock %}
 
 {% block scripts %}
@@ -87,7 +105,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     
     Chart.register(ChartDataLabels);
-
+    
+    
     const formatCurrency = (value) => 
         new Intl.NumberFormat('pt-BR', { 
             style: 'currency', 
@@ -95,16 +114,30 @@ document.addEventListener('DOMContentLoaded', () => {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         }).format(value);
+
+    const formatCurrencyWithCents = (value) =>
+        new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+            minimumFractionDigits: 2
+        }).format(value);
+
+    const formatPricePerKg = (value) => `${value.toFixed(2).replace('.', ',')} R$/kg`;
+
     const formatWeight = (value) => (value / 1000).toFixed(1).replace('.', ',') + 't';
+    
+    const formatPercent = (value) => `${value.toFixed(1).replace('.', ',')}%`;
+
 
     const chartData = {{ chart_data|tojson }};
-    const ctx = document.getElementById('faturamentoChart').getContext('2d');
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
+    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-bg').trim();
+    const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--grid-color', 'rgba(0, 0, 0, 0.1)').trim();
     
     const primaryColor = '#023047';
     const secondaryColor = '#ebd774';
-    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
-    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-bg').trim();
-    
+
+    const ctx = document.getElementById('faturamentoChart').getContext('2d');
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -150,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 datalabels: {
                     display: (context) => context.dataset.type === 'line',
-                    // ALTERAÇÃO: Alterado de primaryColor para textColor para padronizar
                     color: textColor,
                     anchor: 'end',
                     align: 'end',
@@ -167,8 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     grid: { display: false },
                     ticks: { color: textColor }
                 },
-                yPeso: { display: false, beginAtZero: true },
-                yFaturamento: { display: false, beginAtZero: true }
+                yFaturamento: {
+                    display: false
+                },
+                yPeso: {
+                    display: false
+                }
             },
             animation: {
                 onComplete: ({ chart }) => {
@@ -199,6 +235,75 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+ if (document.getElementById('precoKgChart') && chartData.preco_kg_data) {
+        const ctxPreco = document.getElementById('precoKgChart').getContext('2d');
+        new Chart(ctxPreco, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Preço/kg (R$)',
+                    data: chartData.preco_kg_data,
+                    borderColor: '#ee9b00',
+                    backgroundColor: 'rgba(238, 155, 0, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (c) => `Preço/kg: ${formatCurrencyWithCents(c.raw)}` } },
+                    datalabels: {
+                        color: textColor, anchor: 'end', align: 'end',
+                        font: { weight: 'bold', size: 9 },
+                        formatter: (v) => formatPricePerKg(v),
+                        textStrokeColor: backgroundColor, textStrokeWidth: 4, padding: 0,
+                    }
+                },
+                scales: {
+                    x: { display: true, grid: { display: false }, ticks: { color: textColor } },
+                    y: { display: false}
+                   }
+            }
+        });
+    }
+ if (document.getElementById('descontoChart') && chartData.desconto_data) {
+        const ctxDesconto = document.getElementById('descontoChart').getContext('2d');
+        new Chart(ctxDesconto, {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Desconto Médio (%)',
+                    data: chartData.desconto_data,
+                    borderColor: '#2a9d8f',
+                    backgroundColor: 'rgba(42, 157, 143, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (c) => `Desconto: ${formatPercent(c.raw)}` } },
+                    datalabels: {
+                        color: textColor, anchor: 'end', align: 'end',
+                        font: { weight: 'bold', size: 9 },
+                        formatter: (v) => formatPercent(v),
+                        textStrokeColor: backgroundColor, textStrokeWidth: 4, padding: 0,
+                    }
+                },
+                scales: {
+                    x: { display: true, grid: { display: false }, ticks: { color: textColor } },
+                    y: { display: false}
+                }
+            }
+        });
+    }
 });
 </script>
 {% endif %}
