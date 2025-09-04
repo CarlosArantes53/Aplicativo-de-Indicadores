@@ -300,23 +300,34 @@ footer.footer {
 .kpi-card.devolucoes { border-color: #ef4444; }
 .kpi-card.faturamento-liquido { border-color: #10b981; }
 
-.kpi-main-value {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 1rem;    
-    line-height: 1.2;
-}
-
+/* Força cada valor (Peso / Quantidade) a ficar em sua própria linha */
 .kpi-secondary-values {
     display: flex;
-    justify-content: space-between;
-    align-items: right;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
     font-size: 0.95rem;
     color: var(--text-secondary);
-    flex-wrap: wrap;
-    gap: 10px;
 }
+
+/* garante que o conteúdo não quebre em várias linhas inesperadamente */
+.kpi-secondary-values span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Se quiser um estilo mais compacto para o valor principal */
+.kpi-main-value {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 0.6rem;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
 
 .filter-container form {
     display: flex;

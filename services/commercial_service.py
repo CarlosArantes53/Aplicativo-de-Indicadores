@@ -5,24 +5,25 @@ import os
 
 def format_value(value, is_currency=True):
     if pd.isna(value) or value is None:
-        return "R$ 0,00" if is_currency else "0"
+        return "R$ 0" if is_currency else "0"
     if is_currency:
-        return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"R$ {int(value):,}".replace(",", "X").replace(".", ",").replace("X", ".")
     else:
         return f"{int(value):,}".replace(",", ".")
 
 def calculate_commercial_kpis(start_date_str, end_date_str):
     kpis_data = {}
+    chart_data = None
     error = None
     parquet_path = os.getenv('PARQUET_ANALISE_VENDA_HEAD')
 
     if not parquet_path:
         error = "Caminho do arquivo Parquet não definido na variável de ambiente 'PARQUET_ANALISE_VENDA_HEAD'."
-        return kpis_data, error
+        return kpis_data, chart_data, error
 
     if not os.path.exists(parquet_path):
         error = f"Arquivo de dados '{parquet_path}' não encontrado. Verifique o caminho."
-        return kpis_data, error
+        return kpis_data, chart_data, error
 
     try:
         df = pd.read_parquet(parquet_path)
@@ -35,8 +36,9 @@ def calculate_commercial_kpis(start_date_str, end_date_str):
         filtered_df = df.loc[mask]
 
         if filtered_df.empty:
-            return {}, None
+            return {}, None, None
         
+        # --- Cálculo dos KPIs (sem alteração) ---
         summary = filtered_df.groupby('TipoNs').agg(
             Valor=('ValorTotal', 'sum'),
             Peso=('PesoTotal', 'sum'),
@@ -55,9 +57,9 @@ def calculate_commercial_kpis(start_date_str, end_date_str):
         cancel_qtd = summary.loc[summary['TipoNs'] == 'CANCELAMENTO', 'Quantidade'].sum()
         devolucao_qtd = summary.loc[summary['TipoNs'] == 'DEVOLUÇÃO', 'Quantidade'].sum()
 
-        net_revenue_valor = nf_saida_val - cancel_val - devolucao_val
-        net_revenue_peso = nf_saida_peso - cancel_peso - devolucao_peso
-        net_revenue_qtd = nf_saida_qtd - cancel_qtd - devolucao_qtd
+        net_revenue_valor = nf_saida_val + cancel_val + devolucao_val
+        net_revenue_peso = nf_saida_peso + cancel_peso + devolucao_peso
+        net_revenue_qtd = nf_saida_qtd + cancel_qtd + devolucao_qtd
 
         kpis_list = summary.to_dict('records')
         for kpi in kpis_list:
@@ -74,7 +76,23 @@ def calculate_commercial_kpis(start_date_str, end_date_str):
         
         kpis_data = {item['TipoNs']: item for item in kpis_list}
 
+        # --- NOVO: Preparação dos dados para o gráfico ---
+        df_saida = filtered_df[filtered_df['TipoNs'] == 'NOTA FISCAL DE SAÍDA'].copy()
+        if not df_saida.empty:
+            df_saida.loc[:, 'Data'] = df_saida['Data'].dt.date
+            daily_agg = df_saida.groupby('Data').agg(
+                Faturamento=('ValorTotal', 'sum'),
+                Peso=('PesoTotal', 'sum')
+            ).reset_index()
+            daily_agg = daily_agg.sort_values(by='Data')
+            
+            chart_data = {
+                'labels': [d.strftime('%d/%m') for d in daily_agg['Data']],
+                'faturamento_data': daily_agg['Faturamento'].tolist(),
+                'peso_data': daily_agg['Peso'].tolist()
+            }
+
     except Exception as e:
         error = f"Erro ao processar o arquivo de dados: {e}"
 
-    return kpis_data, error
+    return kpis_data, chart_data, error

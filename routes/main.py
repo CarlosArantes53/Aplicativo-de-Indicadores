@@ -24,19 +24,17 @@ def comercial_geral():
     first_day_prev_month = (today.replace(day=1) - relativedelta(months=1))
     last_day_prev_month = (today.replace(day=1) - relativedelta(days=1))
 
-    
     start_date_str = request.args.get('start_date', default=first_day_prev_month.strftime('%Y-%m-%d'))
     end_date_str = request.args.get('end_date', default=last_day_prev_month.strftime('%Y-%m-%d'))
 
-    
-    kpis, error = calculate_commercial_kpis(start_date_str, end_date_str)
+    kpis, chart_data, error = calculate_commercial_kpis(start_date_str, end_date_str)
 
-    
     if error:
         flash(error, "danger")
 
     return render_template('setores/comercial/geral.html', 
                            kpis=kpis, 
+                           chart_data=chart_data,
                            start_date=start_date_str, 
                            end_date=end_date_str)
 

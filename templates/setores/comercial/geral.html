@@ -65,8 +65,141 @@
         </div>
         {% endif %}
     </div>
+
+    {% if chart_data and chart_data.labels %}
+    <div class="box-container" style="margin-top: 2rem; padding: 1.5rem;">
+        <h3 style="margin-top:0; text-align: center; color: var(--text-secondary);">Faturamento Diário x Peso</h3>
+        <div style="position: relative; height: 50vh; width: 100%;">
+            <canvas id="faturamentoChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
     {% else %}
         <div class="alert alert-info">Nenhum dado para exibir no período selecionado.</div>
     {% endif %}
 
+{% endblock %}
+
+{% block scripts %}
+{% if chart_data and chart_data.labels %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    
+    Chart.register(ChartDataLabels);
+
+    const formatCurrency = (value) => 
+        new Intl.NumberFormat('pt-BR', { 
+            style: 'currency', 
+            currency: 'BRL',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(value);
+    const formatWeight = (value) => (value / 1000).toFixed(1).replace('.', ',') + 't';
+
+    const chartData = {{ chart_data|tojson }};
+    const ctx = document.getElementById('faturamentoChart').getContext('2d');
+    
+    const primaryColor = '#023047';
+    const secondaryColor = '#ebd774';
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim();
+    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-bg').trim();
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartData.labels,
+            datasets: [
+                {
+                    label: 'Faturamento (R$)',
+                    data: chartData.faturamento_data,
+                    type: 'line',
+                    borderColor: primaryColor,
+                    backgroundColor: 'transparent',
+                    yAxisID: 'yFaturamento',
+                    tension: 0.4,
+                    order: 0
+                },
+                {
+                    label: 'Peso (kg)',
+                    data: chartData.peso_data,
+                    backgroundColor: secondaryColor,
+                    yAxisID: 'yPeso',
+                    order: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.dataset.yAxisID === 'yFaturamento') {
+                                label += formatCurrency(context.raw);
+                            } else {
+                                label += new Intl.NumberFormat('pt-BR').format(context.raw) + ' kg';
+                            }
+                            return label;
+                        }
+                    }
+                },
+                datalabels: {
+                    display: (context) => context.dataset.type === 'line',
+                    // ALTERAÇÃO: Alterado de primaryColor para textColor para padronizar
+                    color: textColor,
+                    anchor: 'end',
+                    align: 'end',
+                    offset: -8,
+                    font: { weight: 'bold', size: 10 },
+                    formatter: (value) => formatCurrency(value),
+                    textStrokeColor: backgroundColor,
+                    textStrokeWidth: 4,
+                    padding: 0
+                },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: textColor }
+                },
+                yPeso: { display: false, beginAtZero: true },
+                yFaturamento: { display: false, beginAtZero: true }
+            },
+            animation: {
+                onComplete: ({ chart }) => {
+                    const ctx = chart.ctx;
+                    chart.data.datasets.forEach((dataset, i) => {
+                        if (dataset.type !== 'line') {
+                            const meta = chart.getDatasetMeta(i);
+                            meta.data.forEach((bar, index) => {
+                                const data = formatWeight(dataset.data[index]);
+                                ctx.save();
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'bottom';
+                                ctx.font = 'bold 10px Segoe UI';
+                                const yPos = bar.y - 5;
+                                
+                                ctx.lineWidth = 4;
+                                ctx.strokeStyle = backgroundColor;
+                                ctx.strokeText(data, bar.x, yPos);
+                                
+                                ctx.fillStyle = textColor;
+                                ctx.fillText(data, bar.x, yPos);
+                                
+                                ctx.restore();
+                            });
+                        }
+                    });
+                }
+            }
+        }
+    });
+});
+</script>
+{% endif %}
 {% endblock %}
