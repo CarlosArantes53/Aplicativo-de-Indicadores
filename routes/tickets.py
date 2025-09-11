@@ -7,35 +7,30 @@ from collections.abc import Iterable
 tickets_bp = Blueprint('tickets', __name__, url_prefix='/tickets')
 
 def _to_safe_list(x):
-    """
-    Normaliza iteráveis para list para que Jinja possa avaliá-los com segurança.
-    - None -> []
-    - strings/bytes -> retornam como estão (não convertidas)
-    - objetos com tolist() (ex: numpy.ndarray) -> usa tolist()
-    - outros iteráveis -> list(x)
-    - fallback -> retorna x original
-    """
     if x is None:
         return []
     if isinstance(x, (str, bytes)):
         return x
     try:
-        # numpy arrays e similares costumam ter tolist()
         if hasattr(x, "tolist") and callable(x.tolist):
             return x.tolist()
         if isinstance(x, Iterable):
             return list(x)
     except Exception:
-        # em caso de erro, deixamos o valor original (defensivo)
         return x
     return x
 
 @tickets_bp.route('/')
 @login_required
 def list_tickets():
-    user_email = session['user']['email']
-    tickets = ticket_service.get_user_tickets(user_email)
-    return render_template('tickets/list.html', tickets=tickets)
+    user_roles = session['user'].get('roles', {})
+    if 'admin' in user_roles:
+        tickets = ticket_service.get_all_tickets()
+    else:
+        user_email = session['user']['email']
+        tickets = ticket_service.get_user_tickets(user_email)
+        
+    return render_template('tickets/list.html', tickets=tickets, is_admin='admin' in user_roles)
 
 @tickets_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -61,27 +56,34 @@ def create_ticket():
 
     return render_template('tickets/create.html')
 
-@tickets_bp.route('/<ticket_id>', methods=['GET', 'POST'])
+@tickets_bp.route('/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
 def view_ticket(ticket_id):
-    if request.method == 'POST':
-        reply_text = request.form.get('reply')
-        user_email = session['user']['email']
-        if reply_text:
-            ticket_service.add_reply_to_ticket(ticket_id, reply_text, user_email)
-            flash('Resposta adicionada com sucesso!', 'success')
-        return redirect(url_for('tickets.view_ticket', ticket_id=ticket_id))
-
+    user_roles = session['user'].get('roles', {})
+    is_admin = 'admin' in user_roles
+    
     ticket = ticket_service.get_ticket_by_id(ticket_id)
-    if not ticket or ticket['user_email'] != session['user']['email']:
+
+    if not ticket or (ticket['user_email'] != session['user']['email'] and not is_admin):
         flash('Chamado não encontrado ou você não tem permissão para visualizá-lo.', 'danger')
         return redirect(url_for('tickets.list_tickets'))
 
-    # -------------------------
-    # Normaliza ticket['responses']
-    # -------------------------
-    if 'responses' in ticket:
-        ticket['responses'] = _to_safe_list(ticket['responses'])
-    # -------------------------
+    if request.method == 'POST':
+        if 'reply' in request.form:
+            reply_text = request.form.get('reply')
+            user_email = session['user']['email']
+            if reply_text:
+                ticket_service.add_reply_to_ticket(ticket_id, reply_text, user_email)
+                flash('Resposta adicionada com sucesso!', 'success')
+        
+        if 'status' in request.form and is_admin:
+            new_status = request.form.get('status')
+            ticket_service.update_ticket_status(ticket_id, new_status)
+            flash('Status do chamado atualizado com sucesso!', 'success')
 
-    return render_template('tickets/view.html', ticket=ticket)
+        return redirect(url_for('tickets.view_ticket', ticket_id=ticket_id))
+
+    if 'responses' in ticket:
+        ticket['responses'] = sorted(_to_safe_list(ticket['responses']), key=lambda r: r['timestamp'])
+
+    return render_template('tickets/view.html', ticket=ticket, is_admin=is_admin)

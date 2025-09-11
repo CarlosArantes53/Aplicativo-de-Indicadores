@@ -3,7 +3,22 @@
 {% block title %}Detalhes do Chamado{% endblock %}
 
 {% block content %}
-    <h1>Detalhes do Chamado #{{ ticket.id[:8] }}...</h1>
+<style>
+    .admin-reply {
+        background-color: rgba(42, 157, 143, 0.1);
+        border-left: 5px solid #2a9d8f;
+        padding-left: 1rem;
+        border-radius: 5px;
+    }
+    .user-reply {
+        background-color: rgba(238, 155, 0, 0.1);
+        border-left: 5px solid #ee9b00;
+        padding-left: 1rem;
+        border-radius: 5px;
+    }
+</style>
+
+    <h1>Detalhes do Chamado #{{ ticket.id }}</h1>
 
     <div class="box-container" style="margin-top: 2rem;">
         <h3>{{ ticket.title }}</h3>
@@ -14,13 +29,29 @@
         {% if ticket.attachment %}
             <p><strong>Anexo:</strong> <a href="{{ url_for('static', filename=ticket.attachment.replace('uploads/', '')) }}" target="_blank">Ver anexo</a></p>
         {% endif %}
+
+        {% if is_admin %}
+        <form method="post" style="margin-top: 1.5rem;">
+            <div class="input-group" style="display: inline-block; margin-right: 1rem;">
+                <label for="status">Alterar Status:</label>
+                <select id="status" name="status">
+                    <option value="Aberto" {% if ticket.status == 'Aberto' %}selected{% endif %}>Aberto</option>
+                    <option value="Em Andamento" {% if ticket.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                    <option value="Aguardando Resposta" {% if ticket.status == 'Aguardando Resposta' %}selected{% endif %}>Aguardando Resposta</option>
+                    <option value="Fechado" {% if ticket.status == 'Fechado' %}selected{% endif %}>Fechado</option>
+                </select>
+            </div>
+            <button type="submit" class="btn">Atualizar Status</button>
+        </form>
+        {% endif %}
     </div>
 
     <div class="box-container" style="margin-top: 2rem;">
         <h3>Respostas</h3>
         {% if ticket.responses|length > 0 %}
             {% for reply in ticket.responses %}
-                <div class="reply" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;">
+                <div class="reply {% if 'admin' in session.user.roles and reply.user_email == session.user.email %}admin-reply{% else %}user-reply{% endif %}" 
+                    style="border-bottom: 1px solid var(--border-color); padding: 1rem; margin-bottom: 1rem;">
                     <p><strong>{{ reply.user_email }}</strong> em {{ reply.timestamp.strftime('%d/%m/%Y %H:%M') }}</p>
                     <p>{{ reply.text|nl2br }}</p>
                 </div>

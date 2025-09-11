@@ -11,6 +11,9 @@
             <thead>
                 <tr>
                     <th>ID</th>
+                    {% if is_admin %}
+                    <th>Usuário</th>
+                    {% endif %}
                     <th>Título</th>
                     <th>Setor</th>
                     <th>Urgência</th>
@@ -21,7 +24,10 @@
             <tbody>
                 {% for ticket in tickets %}
                 <tr>
-                    <td>{{ ticket.id[:8] }}...</td>
+                    <td>#{{ ticket.id }}</td>
+                    {% if is_admin %}
+                    <td>{{ ticket.user_email }}</td>
+                    {% endif %}
                     <td>{{ ticket.title }}</td>
                     <td>{{ ticket.sector }}</td>
                     <td>{{ ticket.urgency }}</td>
