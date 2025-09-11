@@ -2,8 +2,33 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from decorators import login_required
 from services import ticket_service
 import os
+from collections.abc import Iterable
 
 tickets_bp = Blueprint('tickets', __name__, url_prefix='/tickets')
+
+def _to_safe_list(x):
+    """
+    Normaliza iteráveis para list para que Jinja possa avaliá-los com segurança.
+    - None -> []
+    - strings/bytes -> retornam como estão (não convertidas)
+    - objetos com tolist() (ex: numpy.ndarray) -> usa tolist()
+    - outros iteráveis -> list(x)
+    - fallback -> retorna x original
+    """
+    if x is None:
+        return []
+    if isinstance(x, (str, bytes)):
+        return x
+    try:
+        # numpy arrays e similares costumam ter tolist()
+        if hasattr(x, "tolist") and callable(x.tolist):
+            return x.tolist()
+        if isinstance(x, Iterable):
+            return list(x)
+    except Exception:
+        # em caso de erro, deixamos o valor original (defensivo)
+        return x
+    return x
 
 @tickets_bp.route('/')
 @login_required
@@ -51,5 +76,12 @@ def view_ticket(ticket_id):
     if not ticket or ticket['user_email'] != session['user']['email']:
         flash('Chamado não encontrado ou você não tem permissão para visualizá-lo.', 'danger')
         return redirect(url_for('tickets.list_tickets'))
-        
+
+    # -------------------------
+    # Normaliza ticket['responses']
+    # -------------------------
+    if 'responses' in ticket:
+        ticket['responses'] = _to_safe_list(ticket['responses'])
+    # -------------------------
+
     return render_template('tickets/view.html', ticket=ticket)

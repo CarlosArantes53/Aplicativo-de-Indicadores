@@ -18,7 +18,7 @@
 
     <div class="box-container" style="margin-top: 2rem;">
         <h3>Respostas</h3>
-        {% if ticket.responses %}
+        {% if ticket.responses|length > 0 %}
             {% for reply in ticket.responses %}
                 <div class="reply" style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem;">
                     <p><strong>{{ reply.user_email }}</strong> em {{ reply.timestamp.strftime('%d/%m/%Y %H:%M') }}</p>

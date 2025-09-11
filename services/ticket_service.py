@@ -24,10 +24,22 @@ def get_ticket_by_id(ticket_id):
         return None
     
     df = pd.read_parquet(TICKETS_FILE)
-    ticket = df[df['id'] == ticket_id]
+    ticket_df = df[df['id'] == ticket_id]
     
-    if not ticket.empty:
-        return ticket.to_dict('records')[0]
+    if not ticket_df.empty:
+        ticket = ticket_df.to_dict('records')[0]
+    
+        responses = ticket.get('responses')
+        
+        if responses is not None and len(responses) > 0:
+            for reply in responses:
+                if isinstance(reply.get('timestamp'), str):
+                    try:
+                        reply['timestamp'] = pd.to_datetime(reply['timestamp'])
+                    except (ValueError, TypeError):
+                        pass
+                        
+        return ticket
     return None
 
 
