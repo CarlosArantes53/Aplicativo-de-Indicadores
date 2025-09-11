@@ -89,7 +89,7 @@ def calculate_commercial_kpis(start_date_str, end_date_str):
             how='left'
         )
 
-        df_saida = df_merged[df_merged['TipoNs'] == 'NOTA FISCAL DE SAÍDA'].copy()
+        df_saida = df_merged[df_merged['TipoNs'] != 'ANULAÇÃO'].copy()
 
         if not df_saida.empty:
             df_saida.loc[:, 'Data'] = df_saida['Data'].dt.date

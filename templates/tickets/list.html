@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block title %}Meus Chamados{% endblock %}
+
+{% block content %}
+    <h1>Meus Chamados</h1>
+    <a href="{{ url_for('tickets.create_ticket') }}" class="btn">Abrir Novo Chamado</a>
+    
+    {% if tickets %}
+        <table class="table-users" style="margin-top: 2rem;">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Setor</th>
+                    <th>Urgência</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in tickets %}
+                <tr>
+                    <td>{{ ticket.id[:8] }}...</td>
+                    <td>{{ ticket.title }}</td>
+                    <td>{{ ticket.sector }}</td>
+                    <td>{{ ticket.urgency }}</td>
+                    <td>{{ ticket.status }}</td>
+                    <td>
+                        <a href="{{ url_for('tickets.view_ticket', ticket_id=ticket.id) }}">Ver Detalhes</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p style="margin-top: 2rem;">Você ainda não abriu nenhum chamado.</p>
+    {% endif %}
+{% endblock %}

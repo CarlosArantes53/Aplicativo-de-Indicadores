@@ -12,6 +12,7 @@
         <div class="nav-links">
             {% if session.user %}
                 <a href="{{ url_for('main.home') }}">Home</a>
+                <a href="{{ url_for('tickets.list_tickets') }}">Chamados</a> 
                 
                 {% if 'admin' in session.user.roles or 'comercial' in session.user.roles or 'diretoria' in session.user.roles %}
                     <a href="{{ url_for('main.setor_comercial') }}">Comercial</a>

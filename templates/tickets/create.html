@@ -1,0 +1,49 @@
+{% extends 'layout.html' %}
+
+{% block title %}Abrir Novo Chamado{% endblock %}
+
+{% block content %}
+<h1>Abrir Novo Chamado</h1>
+<form method="post" enctype="multipart/form-data" class="user-form">
+    <div class="input-group">
+        <label for="title">Título:</label>
+        <input type="text" id="title" name="title" required>
+    </div>
+
+    <div class="input-group">
+        <label for="urgency">Nível de Urgência:</label>
+        <select id="urgency" name="urgency" required>
+            <option value="Baixa">Baixa</option>
+            <option value="Média">Média</option>
+            <option value="Alta">Alta</option>
+            <option value="Crítica">Crítica</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label for="sector">Setor:</label>
+        <select id="sector" name="sector" required>
+            <option value="TI">TI</option>
+            <option value="Financeiro">Financeiro</option>
+            <option value="Comercial">Comercial</option>
+            <option value="RH">RH</option>
+            <option value="Operacional">Operacional</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label for="description">Descrição:</label>
+        <textarea id="description" name="description" rows="5" required></textarea>
+    </div>
+    
+    <div class="input-group">
+        <label for="attachment">Anexo (Opcional):</label>
+        <input type="file" id="attachment" name="attachment">
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn">Abrir Chamado</button>
+        <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

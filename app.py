@@ -12,10 +12,12 @@ def create_app():
     from routes.auth import auth_bp
     from routes.main import main_bp
     from routes.admin import admin_bp
+    from routes.tickets import tickets_bp # Adicionar esta linha
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(tickets_bp) # Adicionar esta linha
 
     return app
 
