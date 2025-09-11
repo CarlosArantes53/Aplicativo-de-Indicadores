@@ -1,24 +1,44 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+import pandas as pd
 from decorators import login_required
 from services import ticket_service
 import os
 from collections.abc import Iterable
+from datetime import datetime
+import ast
 
 tickets_bp = Blueprint('tickets', __name__, url_prefix='/tickets')
 
+# no topo, importe datetime usado abaixo
+
 def _to_safe_list(x):
+    """Garante sempre devolver uma lista de objetos (não string)."""
     if x is None:
         return []
+    # se veio como string que representa lista/dict
     if isinstance(x, (str, bytes)):
-        return x
+        try:
+            parsed = ast.literal_eval(x)
+            if isinstance(parsed, list):
+                return parsed
+            if isinstance(parsed, dict):
+                return [parsed]
+            return []
+        except Exception:
+            return []
     try:
         if hasattr(x, "tolist") and callable(x.tolist):
             return x.tolist()
-        if isinstance(x, Iterable):
+        if isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
             return list(x)
     except Exception:
-        return x
-    return x
+        return []
+    # se for dict único
+    if isinstance(x, dict):
+        return [x]
+    # fallback
+    return [x]
+
 
 @tickets_bp.route('/')
 @login_required
@@ -84,6 +104,20 @@ def view_ticket(ticket_id):
         return redirect(url_for('tickets.view_ticket', ticket_id=ticket_id))
 
     if 'responses' in ticket:
-        ticket['responses'] = sorted(_to_safe_list(ticket['responses']), key=lambda r: r['timestamp'])
+        # normaliza para lista e converte timestamps para datetime.datetime
+        ticket['responses'] = _to_safe_list(ticket['responses'])
+        for r in ticket['responses']:
+            ts = r.get('timestamp')
+            try:
+                if isinstance(ts, str):
+                    r['timestamp'] = pd.to_datetime(ts).to_pydatetime()
+                elif isinstance(ts, (pd.Timestamp,)):
+                    r['timestamp'] = ts.to_pydatetime()
+            except Exception:
+                r['timestamp'] = None
+
+        # ordena por timestamp (None vai para o início)
+        ticket['responses'] = sorted(ticket['responses'], key=lambda r: (r.get('timestamp') is None, r.get('timestamp')))
+
 
     return render_template('tickets/view.html', ticket=ticket, is_admin=is_admin)

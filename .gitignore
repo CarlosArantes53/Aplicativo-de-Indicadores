@@ -4,3 +4,4 @@
 *.pyc
 *.cpython-313.pyc
 *.parquet
+/uploads

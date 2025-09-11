@@ -50,9 +50,16 @@
         <h3>Respostas</h3>
         {% if ticket.responses|length > 0 %}
             {% for reply in ticket.responses %}
-                <div class="reply {% if 'admin' in session.user.roles and reply.user_email == session.user.email %}admin-reply{% else %}user-reply{% endif %}" 
+                <div class="reply {% if reply.user_email == ticket.user_email %}user-reply{% else %}admin-reply{% endif %}" 
                     style="border-bottom: 1px solid var(--border-color); padding: 1rem; margin-bottom: 1rem;">
-                    <p><strong>{{ reply.user_email }}</strong> em {{ reply.timestamp.strftime('%d/%m/%Y %H:%M') }}</p>
+                    {% set ts = reply.timestamp %}
+                        <p><strong>{{ reply.user_email }}</strong> em
+                            {% if ts %}
+                                {{ ts.strftime('%d/%m/%Y %H:%M') }}
+                            {% else %}
+                                (sem data)
+                            {% endif %}
+                        </p>
                     <p>{{ reply.text|nl2br }}</p>
                 </div>
             {% endfor %}
