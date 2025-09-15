@@ -9,8 +9,6 @@ import ast
 
 tickets_bp = Blueprint('tickets', __name__, url_prefix='/tickets')
 
-# no topo, importe datetime usado abaixo
-
 def _to_safe_list(x):
     """Garante sempre devolver uma lista de objetos (não string)."""
     if x is None:
@@ -60,7 +58,7 @@ def create_ticket():
         urgency = request.form.get('urgency')
         sector = request.form.get('sector')
         description = request.form.get('description')
-        attachment = request.files.get('attachment')
+        attachments = request.files.getlist('attachments')
         user_email = session['user']['email']
 
         if not all([title, urgency, sector, description]):
@@ -68,7 +66,7 @@ def create_ticket():
             return redirect(url_for('tickets.create_ticket'))
 
         try:
-            ticket_service.create_ticket(title, urgency, sector, description, user_email, attachment)
+            ticket_service.create_ticket(title, urgency, sector, description, user_email, attachments)
             flash('Chamado criado com sucesso!', 'success')
             return redirect(url_for('tickets.list_tickets'))
         except Exception as e:
@@ -92,8 +90,9 @@ def view_ticket(ticket_id):
         if 'reply' in request.form:
             reply_text = request.form.get('reply')
             user_email = session['user']['email']
+            attachments = request.files.getlist('attachments')
             if reply_text:
-                ticket_service.add_reply_to_ticket(ticket_id, reply_text, user_email)
+                ticket_service.add_reply_to_ticket(ticket_id, reply_text, user_email, attachments)
                 flash('Resposta adicionada com sucesso!', 'success')
         
         if 'status' in request.form and is_admin:

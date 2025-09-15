@@ -3,12 +3,18 @@ import numpy as np
 import pandas as pd
 import os
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 TICKETS_FILE = 'tickets.parquet'
 UPLOAD_FOLDER = 'uploads/tickets'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'mp4', 'mov', 'avi'}
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_all_tickets():
     """Carrega todos os chamados do arquivo Parquet."""
@@ -102,8 +108,8 @@ def get_ticket_by_id(ticket_id):
 
 
 
-def add_reply_to_ticket(ticket_id, reply_text, user_email):
-    """Adiciona reply criando uma nova lista (não mutando shareable lists)."""
+def add_reply_to_ticket(ticket_id, reply_text, user_email, attachments=None):
+    """Adiciona uma resposta a um chamado, com suporte a múltiplos anexos."""
     if not os.path.exists(TICKETS_FILE):
         return False
 
@@ -113,40 +119,53 @@ def add_reply_to_ticket(ticket_id, reply_text, user_email):
     if not ticket_index.empty:
         idx = ticket_index[0]
 
-        # garante que a coluna exista e que cada célula tenha sua própria lista
+        attachment_paths = []
+        if attachments:
+            for attachment in attachments:
+                if attachment and attachment.filename and allowed_file(attachment.filename):
+                    filename = f"{ticket_id}_reply_{datetime.now().strftime('%Y%m%d%H%M%S')}_{secure_filename(attachment.filename)}"
+                    attachment_path = os.path.join(UPLOAD_FOLDER, filename)
+                    attachment.save(attachment_path)
+                    attachment_paths.append(attachment_path)
+
+        # Garante que a coluna 'responses' exista
         if 'responses' not in df.columns:
             df['responses'] = pd.Series([[] for _ in range(len(df))], dtype=object)
 
-        # pega valor atual e transforma em lista nova
+        # Obtém as respostas existentes
         responses = df.at[idx, 'responses']
-        if isinstance(responses, str):
+        if pd.isna(responses):
+            responses = []
+        elif isinstance(responses, str):
             try:
                 responses = ast.literal_eval(responses)
-            except Exception:
+            except (ValueError, SyntaxError):
                 responses = []
+        
         if not isinstance(responses, list):
-            responses = list(responses) if hasattr(responses, '__iter__') and not isinstance(responses, (str, bytes)) else []
+            responses = [responses]
 
         new_reply = {
             'text': reply_text,
             'user_email': user_email,
-            'timestamp': datetime.now()
+            'timestamp': datetime.now(),
+            'attachments': attachment_paths
         }
 
-        # sempre opere em nova lista (evita referências compartilhadas)
-        new_responses = list(responses)  # copia
-        new_responses.append(new_reply)
+        # Adiciona a nova resposta
+        updated_responses = list(responses)
+        updated_responses.append(new_reply)
 
-        df.at[idx, 'responses'] = new_responses
+        df.at[idx, 'responses'] = updated_responses
         df.to_parquet(TICKETS_FILE, index=False)
         return True
 
     return False
 
 
-def create_ticket(title, urgency, sector, description, user_email, attachment=None):
+def create_ticket(title, urgency, sector, description, user_email, attachments=None):
     """Cria um novo chamado e o salva no arquivo Parquet."""
-    attachment_path = None
+    attachment_paths = []
     
     if os.path.exists(TICKETS_FILE):
         df_existing = pd.read_parquet(TICKETS_FILE)
@@ -155,10 +174,13 @@ def create_ticket(title, urgency, sector, description, user_email, attachment=No
         ticket_id = 1
         df_existing = pd.DataFrame()
 
-    if attachment and attachment.filename:
-        filename = f"{ticket_id}_{attachment.filename}"
-        attachment_path = os.path.join(UPLOAD_FOLDER, filename)
-        attachment.save(attachment_path)
+    if attachments:
+        for attachment in attachments:
+            if attachment and attachment.filename and allowed_file(attachment.filename):
+                filename = f"{ticket_id}_{secure_filename(attachment.filename)}"
+                attachment_path = os.path.join(UPLOAD_FOLDER, filename)
+                attachment.save(attachment_path)
+                attachment_paths.append(attachment_path)
 
     new_ticket = {
         'id': ticket_id,
@@ -169,7 +191,7 @@ def create_ticket(title, urgency, sector, description, user_email, attachment=No
         'user_email': user_email,
         'status': 'Aberto',
         'created_at': datetime.now(),
-        'attachment': attachment_path,
+        'attachments': attachment_paths, # Alterado para 'attachments'
         'responses': [] 
     }
 

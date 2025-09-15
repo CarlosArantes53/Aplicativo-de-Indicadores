@@ -26,8 +26,13 @@
         <p><strong>Setor:</strong> {{ ticket.sector }}</p>
         <p><strong>Urgência:</strong> {{ ticket.urgency }}</p>
         <p><strong>Descrição:</strong><br>{{ ticket.description|nl2br }}</p>
-        {% if ticket.attachment %}
-            <p><strong>Anexo:</strong> <a href="{{ url_for('static', filename=ticket.attachment.replace('uploads/', '')) }}" target="_blank">Ver anexo</a></p>
+        {% if ticket.attachments %}
+            <p><strong>Anexos:</strong></p>
+            <ul>
+            {% for attachment in ticket.attachments %}
+                <li><a href="{{ url_for('static', filename='tickets/' + attachment.split('/')[-1]) }}" target="_blank">{{ attachment.split('/')[-1] }}</a></li>
+            {% endfor %}
+            </ul>
         {% endif %}
 
         {% if is_admin %}
@@ -61,16 +66,28 @@
                             {% endif %}
                         </p>
                     <p>{{ reply.text|nl2br }}</p>
+                    {% if reply.attachments %}
+                        <p><strong>Anexos:</strong></p>
+                        <ul>
+                        {% for attachment in reply.attachments %}
+                            <li><a href="{{ url_for('static', filename='tickets/' + attachment.split('/')[-1]) }}" target="_blank">{{ attachment.split('/')[-1] }}</a></li>
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
                 </div>
             {% endfor %}
         {% else %}
             <p>Nenhuma resposta ainda.</p>
         {% endif %}
         
-        <form method="post" style="margin-top: 2rem;">
+        <form method="post" style="margin-top: 2rem;" enctype="multipart/form-data">
             <div class="input-group">
                 <label for="reply">Adicionar Resposta:</label>
                 <textarea id="reply" name="reply" rows="4" required></textarea>
+            </div>
+            <div class="input-group">
+                <label for="attachments">Anexos (Opcional):</label>
+                <input type="file" id="attachments" name="attachments" multiple>
             </div>
             <button type="submit" class="btn">Enviar Resposta</button>
         </form>
