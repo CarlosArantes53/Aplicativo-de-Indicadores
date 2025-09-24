@@ -3,6 +3,7 @@ from flask import Flask
 from flask_minify import Minify
 from markupsafe import escape, Markup
 from models.ticket import db  # Importação do objeto db
+import re
 
 def create_app():
     app = Flask(__name__)
@@ -15,15 +16,27 @@ def create_app():
     # Inicializa o banco de dados com o app
     db.init_app(app)
 
-    # Registrar filtro nl2br seguro para uso nos templates
+    # --- NOVO FILTRO PARA TRANSFORMAR URLS EM LINKS ---
+    def autolink(value):
+        if not value:
+            return ''
+        # Expressão regular para encontrar URLs
+        url_pattern = re.compile(r'((?:https?://|www\.)[^\s<]+[^<.,:;"\'\]\s])')
+        # Substitui cada URL encontrada por uma tag <a>
+        html = url_pattern.sub(r'<a href="\1" target="_blank">\1</a>', escape(value))
+        return Markup(html)
+
     def nl2br(value):
         if value is None:
             return ''
-        escaped = escape(value)
-        html = escaped.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>')
+        # Aplica o autolink antes de converter quebras de linha
+        linked_text = autolink(value)
+        # Converte quebras de linha para <br>
+        html = linked_text.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>')
         return Markup(html)
 
     app.jinja_env.filters['nl2br'] = nl2br
+    # --- FIM DO NOVO FILTRO ---
 
     if not app.config.get('DEBUG', False):
         Minify(app=app, html=True, js=True, cssless=True)

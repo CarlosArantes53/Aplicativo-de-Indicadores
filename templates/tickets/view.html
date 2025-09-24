@@ -4,76 +4,36 @@
 
 {% block content %}
 <style>
-    .admin-reply {
-        background-color: rgba(42, 157, 143, 0.1);
-        border-left: 5px solid #2a9d8f;
-        padding-left: 1rem;
+    .admin-reply, .user-reply {
         border-radius: 5px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 5px solid;
     }
-    .user-reply {
-        background-color: rgba(238, 155, 0, 0.1);
-        border-left: 5px solid #ee9b00;
-        padding-left: 1rem;
-        border-radius: 5px;
-    }
-    /* Estilos do Carrossel */
-    .carousel-container {
-        position: relative;
-        max-width: 800px;
-        margin: 2rem auto;
-        border-radius: var(--border-radius);
-        overflow: hidden;
+    .admin-reply { background-color: rgba(42, 157, 143, 0.1); border-color: #2a9d8f; }
+    .user-reply { background-color: rgba(238, 155, 0, 0.1); border-color: #ee9b00; }
+    
+    .validation-request { border-left: 5px solid #3b82f6; background-color: rgba(59, 130, 246, 0.1); }
+    .validation-response { margin-top: 1rem; margin-left: 2rem; border-left: 3px solid; }
+    .validation-approved { border-color: #10b981; background-color: rgba(16, 185, 129, 0.1); }
+    .validation-rejected { border-color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+    
+    .status-badge { color: white; padding: 0.2rem 0.5rem; font-size: 0.8rem; border-radius: 10px; }
+    .validation-pending-badge { background-color: #f59e0b; }
+    .validation-approved-badge { background-color: #10b981; }
+    .validation-rejected-badge { background-color: #ef4444; }
+    .validation-completed-badge { background-color: #2a9d8f; }
+    .validation-canceled-badge { background-color: #4a5568; }
+
+    .external-ticket-link {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
         background-color: var(--primary-bg);
-    }
-    .carousel-slides {
-        display: flex;
-        transition: transform 0.5s ease-in-out;
-        width: 100%;
-    }
-    .carousel-slide {
-        min-width: 100%;
-        box-sizing: border-box;
-        padding: 0.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .carousel-media {
-        width: 100%;
-        height: auto;
-        max-height: 70vh;
-        object-fit: contain;
-        display: block;
-    }
-    .carousel-file-placeholder {
-        width: 100%;
-        padding: 2rem;
-        text-align: center;
-        border: 2px dashed rgba(0,0,0,0.1);
-        border-radius: 6px;
-        background: rgba(0,0,0,0.03);
-    }
-    .carousel-container .prev, .carousel-container .next {
-        cursor: pointer;
-        position: absolute;
-        top: 50%;
-        width: auto;
-        padding: 16px;
-        margin-top: -22px;
-        color: white;
-        font-weight: bold;
-        font-size: 20px;
-        transition: 0.6s ease;
-        border-radius: 0 3px 3px 0;
-        user-select: none;
-        background-color: rgba(0,0,0,0.5);
-    }
-    .carousel-container .next {
-        right: 0;
-        border-radius: 3px 0 0 3px;
-    }
-    .carousel-container .prev:hover, .carousel-container .next:hover {
-        background-color: rgba(0,0,0,0.8);
+        padding: 0.3rem 0.8rem;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        display: inline-block;
+        margin-top: 0.5rem;
     }
 </style>
 
@@ -84,10 +44,16 @@
     <p><strong>Status:</strong> {{ ticket.status }}</p>
     <p><strong>Setor:</strong> {{ ticket.sector }}</p>
     <p><strong>Urgência:</strong> {{ ticket.urgency }}</p>
+    <p><strong>Prazo:</strong> {{ ticket.deadline.strftime('%d/%m/%Y %H:%M') if ticket.deadline else 'Não definido' }}</p>
+    <p><strong>Atribuído a:</strong> {{ ticket.assigned_user_email or 'Ninguém' }}</p>
     <p><strong>Descrição:</strong><br>{{ ticket.description|nl2br }}</p>
+</div>
 
-    {% if is_admin %}
+{% if is_admin %}
+<div class="box-container" style="margin-top: 2rem;">
+    <h3>Ações do Administrador</h3>
     <form method="post" style="margin-top: 1.5rem;">
+        <input type="hidden" name="action" value="admin_update">
         <div class="input-group" style="display: inline-block; margin-right: 1rem;">
             <label for="status">Alterar Status:</label>
             <select id="status" name="status">
@@ -97,89 +63,153 @@
                 <option value="Fechado" {% if ticket.status == 'Fechado' %}selected{% endif %}>Fechado</option>
             </select>
         </div>
-        <button type="submit" class="btn">Atualizar Status</button>
+        <div class="input-group" style="display: inline-block; margin-right: 1rem;">
+            <label for="assignee">Atribuir a:</label>
+            <select id="assignee" name="assignee">
+                <option value="">-- Ninguém --</option>
+                {% for user in all_users %}
+                    <option value="{{ user.email }}" {% if ticket.assigned_user_email == user.email %}selected{% endif %}>
+                        {{ user.email }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn">Atualizar Chamado</button>
     </form>
-    {% endif %}
 </div>
+{% endif %}
 
 <div class="box-container" style="margin-top: 2rem;">
-    <h3>Respostas</h3>
+    <h3>Histórico de Interações</h3>
+    
+    {% macro render_interaction(interaction, ticket_user_email, current_user_is_admin) %}
+        {% set is_validation_request = interaction.action_type == 'request_validation' %}
+        {% set validation_status = interaction.interaction_data.validation_status if is_validation_request else None %}
 
-    {# --- Macro para renderizar um carrossel (ticket-level ou reply-level) --- #}
-    {% macro render_carousel(attachments, carousel_id) %}
-        {% if attachments %}
-        <div class="carousel-container" id="carousel-{{ carousel_id }}">
-            <div class="carousel-slides">
-                {% for att in attachments %}
-                <div class="carousel-slide">
-                    {% set fname = att.filename.lower() %}
-                    {% if fname.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')) %}
-                        <img src="{{ url_for('tickets.download_file', attachment_id=att.id) }}" class="carousel-media" alt="{{ att.filename }}">
-                    {% elif fname.endswith(('.mp4', '.mov', '.avi', '.webm')) %}
-                        <video controls class="carousel-media">
-                            <source src="{{ url_for('tickets.download_file', attachment_id=att.id) }}">
-                            Seu navegador não suporta a tag de vídeo.
-                        </video>
-                    {% else %}
-                        {# Arquivo não visualizável diretamente — mostramos um slide com o nome (sem link) #}
-                        <div class="carousel-file-placeholder">
-                            <p><strong>{{ att.filename }}</strong></p>
-                            <p>Tipo de arquivo não visualizável no carrossel.</p>
-                        </div>
+        <div class="reply 
+            {% if interaction.user_email == ticket_user_email %}user-reply{% else %}admin-reply{% endif %}
+            {% if is_validation_request %}validation-request{% endif %}">
+            
+            <p>
+                <strong>{{ interaction.user_email }}</strong> em {{ interaction.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                {% if is_validation_request %}
+                    - <span class="status-badge validation-{{ validation_status }}-badge">{{ validation_status|capitalize }}</span>
+                    {% if current_user_is_admin %}
+                        <form method="post" style="display: inline-block; margin-left: 1rem;">
+                            <input type="hidden" name="form_action" value="update_interaction_status">
+                            <input type="hidden" name="interaction_id" value="{{ interaction.id }}">
+                            <select name="new_status" onchange="this.form.submit()">
+                                <option value="pending" {% if validation_status == 'pending' %}selected{% endif %}>Pendente</option>
+                                <option value="completed" {% if validation_status == 'completed' %}selected{% endif %}>Concluído</option>
+                                <option value="canceled" {% if validation_status == 'canceled' %}selected{% endif %}>Cancelado</option>
+                            </select>
+                        </form>
                     {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-            {% if attachments|length > 1 %}
-            <a class="prev" role="button" aria-label="Anterior" onclick="moveSlide(this, -1)">&#10094;</a>
-            <a class="next" role="button" aria-label="Próximo" onclick="moveSlide(this, 1)">&#10095;</a>
-            {% endif %}
-        </div>
-        {% endif %}
-    {% endmacro %}
-    {# --- Fim do macro --- #}
+                {% endif %}
+            </p>
 
-    {% if ticket.responses|length > 0 %}
-        {% for reply in ticket.responses %}
-            <div class="reply {% if reply.user_email == ticket.user_email %}user-reply{% else %}admin-reply{% endif %}"
-                style="border-bottom: 1px solid var(--border-color); padding: 1rem; margin-bottom: 1rem;">
-                {% set ts = reply.timestamp %}
-                <p><strong>{{ reply.user_email }}</strong> em
-                    {% if ts %}
-                        {{ ts.strftime('%d/%m/%Y %H:%M') }}
-                    {% else %}
-                        (sem data)
-                    {% endif %}
-                </p>
-                <p>{{ reply.text|nl2br }}</p>
-
-                {# Substitui a lista de links por um carrossel (se houver anexos na resposta) --- #}
-                {% if reply.attachments %}
-                    {{ render_carousel(reply.attachments, 'reply-' ~ loop.index0) }}
+            <div style="word-wrap: break-word;">
+                {% if interaction.action_type in ['comment', 'request_validation'] %}
+                    {% if interaction.action_type == 'request_validation' %}<strong>Pedido de Validação:</strong>{% endif %}
+                    {{ interaction.text|nl2br }}
+                {% elif interaction.action_type == 'status_change' %}
+                    <p>Status do chamado alterado de <strong>{{ interaction.interaction_data.old_status }}</strong> para <strong>{{ interaction.interaction_data.new_status }}</strong>.</p>
+                {% elif interaction.action_type == 'assign' %}
+                    <p>Chamado atribuído a <strong>{{ interaction.interaction_data.new_assignee or 'Ninguém' }}</strong> (antes: {{ interaction.interaction_data.old_assignee or 'Ninguém' }}).</p>
                 {% endif %}
             </div>
+
+            {% if interaction.interaction_data.external_system %}
+                <div class="external-ticket-link">
+                    Vinculado ao chamado: <strong>{{ interaction.interaction_data.external_system }} #{{ interaction.interaction_data.external_ticket_id }}</strong>
+                </div>
+            {% endif %}
+            
+            {% if interaction.deadline %}<p><small><strong>Prazo para esta ação:</strong> {{ interaction.deadline.strftime('%d/%m/%Y %H:%M') }}</small></p>{% endif %}
+            
+            {% if is_validation_request and validation_status == 'pending' and not current_user_is_admin %}
+            <form method="post" style="margin-top: 1rem;">
+                <input type="hidden" name="form_action" value="provide_validation">
+                <input type="hidden" name="parent_interaction_id" value="{{ interaction.id }}">
+                <button type="submit" name="validation_response" value="approved" class="btn">Aprovar</button>
+                <button type="submit" name="validation_response" value="rejected" class="btn btn-secondary">Rejeitar</button>
+            </form>
+            {% endif %}
+
+            {% for child in interaction.children %}
+                <div class="reply validation-response 
+                    {% if child.interaction_data.validation_status == 'approved' %}validation-approved
+                    {% elif child.interaction_data.validation_status == 'rejected' %}validation-rejected
+                    {% endif %}">
+                    <p><strong>{{ child.user_email }}</strong> respondeu em {{ child.timestamp.strftime('%d/%m/%Y %H:%M') }}:
+                        {% if child.action_type == 'provide_validation' %}
+                            Validação: <strong>{{ child.interaction_data.validation_status|capitalize }}</strong>
+                        {% elif child.action_type == 'status_change_manual' %}
+                            Status da ação alterado de <strong>{{ child.interaction_data.old_status }}</strong> para <strong>{{ child.interaction_data.new_status }}</strong>.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endmacro %}
+
+    {# Loop Principal #}
+    {% if ticket.interactions|length > 0 %}
+        {% for interaction in ticket.interactions %}
+            {{ render_interaction(interaction, ticket.user_email, is_admin) }}
         {% endfor %}
     {% else %}
-        <p>Nenhuma resposta ainda.</p>
+        <p>Nenhuma interação ainda.</p>
     {% endif %}
 
+    {# Formulário de Nova Interação #}
     <form method="post" style="margin-top: 2rem;" enctype="multipart/form-data">
+        <input type="hidden" name="form_action" value="add_interaction">
         <div class="input-group">
-            <label for="reply">Adicionar Resposta:</label>
-            <textarea id="reply" name="reply" rows="4"></textarea>
+            <label for="reply_text">Adicionar Interação:</label>
+            <textarea id="reply_text" name="reply_text" rows="4" required></textarea>
         </div>
+        
+        {% if is_admin %}
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+            <div class="input-group" style="flex: 1 1 200px; margin-bottom: 0;">
+                <label for="action">Tipo de Ação:</label>
+                <select id="action" name="action">
+                    <option value="comment">Comentário</option>
+                    <option value="request_validation">Solicitar Validação</option>
+                </select>
+            </div>
+            <div class="input-group" style="flex: 1 1 200px; margin-bottom: 0;">
+                <label for="interaction_deadline">Prazo da Ação (Opcional):</label>
+                <input type="datetime-local" id="interaction_deadline" name="interaction_deadline" min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
+            </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
+             <div class="input-group" style="flex: 1 1 150px; margin-bottom: 0;">
+                <label for="external_system">Vincular Sistema Externo:</label>
+                <select name="external_system">
+                    <option value="">Nenhum</option>
+                    <option value="SPS">SPS</option>
+                    <option value="GDC">GDC</option>
+                </select>
+            </div>
+            <div class="input-group" style="flex: 1 1 200px; margin-bottom: 0;">
+                <label for="external_ticket_id">ID do Chamado Externo:</label>
+                <input type="text" name="external_ticket_id" placeholder="ID do Chamado Externo">
+            </div>
+        </div>
+        {% endif %}
+
         <div class="input-group">
             <label for="attachments">Anexos (Opcional):</label>
             <input type="file" id="attachments" name="attachments" multiple>
         </div>
-        <button type="submit" class="btn">Enviar Resposta</button>
+        <button type="submit" class="btn">Enviar</button>
     </form>
 </div>
 
 <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-secondary" style="margin-top: 2rem;">Voltar para a Lista</a>
-
 {% endblock %}
-
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {

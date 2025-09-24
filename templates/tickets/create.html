@@ -37,6 +37,16 @@
     </div>
     
     <div class="input-group">
+        <label for="tags">Tags (separadas por vírgula):</label>
+        <input type="text" id="tags" name="tags" placeholder="Ex: bug, relatório, urgente">
+    </div>
+
+    <div class="input-group">
+        <label for="deadline">Prazo Final (Opcional):</label>
+        <input type="datetime-local" id="deadline" name="deadline" min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
+    </div>
+
+    <div class="input-group">
         <label for="attachments">Anexos (Opcional):</label>
         <input type="file" id="attachments" name="attachments" multiple>
     </div>

@@ -13,8 +13,10 @@
                     <th>ID</th>
                     {% if is_admin %}
                     <th>Usuário</th>
+                    <th>Atribuído a</th>
                     {% endif %}
                     <th>Título</th>
+                    <th>Tags</th>
                     <th>Setor</th>
                     <th>Urgência</th>
                     <th>Status</th>
@@ -23,12 +25,18 @@
             </thead>
             <tbody>
                 {% for ticket in tickets %}
-                <tr>
+                <tr class="urgency-{{ ticket.urgency.lower() }}">
                     <td>#{{ ticket.id }}</td>
                     {% if is_admin %}
                     <td>{{ ticket.user_email }}</td>
+                    <td>{{ ticket.assigned_user_email or 'N/A' }}</td>
                     {% endif %}
                     <td>{{ ticket.title }}</td>
+                    <td>
+                        {% for tag in ticket.tags %}
+                            <span class="tag">{{ tag.name }}</span>
+                        {% endfor %}
+                    </td>
                     <td>{{ ticket.sector }}</td>
                     <td>{{ ticket.urgency }}</td>
                     <td>{{ ticket.status }}</td>

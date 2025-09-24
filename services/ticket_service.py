@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from models.ticket import db, Ticket, Response, Attachment
+from models.ticket import db, Ticket, Interaction, Attachment, Tag
 
 UPLOAD_FOLDER = 'uploads/tickets'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'mp4', 'mov', 'avi'}
@@ -13,7 +13,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def _save_attachments(files, ticket_id, response_id=None):
+def _save_attachments(files, ticket_id, interaction_id=None):
     """Salva os arquivos de anexo e retorna os objetos Attachment."""
     attachment_objects = []
     for file in files:
@@ -21,8 +21,8 @@ def _save_attachments(files, ticket_id, response_id=None):
             original_filename = secure_filename(file.filename)
             timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
             
-            if response_id:
-                filename = f"{ticket_id}_response_{response_id}_{timestamp}_{original_filename}"
+            if interaction_id:
+                filename = f"{ticket_id}_interaction_{interaction_id}_{timestamp}_{original_filename}"
             else:
                 filename = f"{ticket_id}_ticket_{timestamp}_{original_filename}"
                 
@@ -33,7 +33,7 @@ def _save_attachments(files, ticket_id, response_id=None):
                 filepath=filepath,
                 filename=original_filename,
                 ticket_id=ticket_id,
-                response_id=response_id
+                interaction_id=interaction_id
             )
             attachment_objects.append(new_attachment)
     return attachment_objects
@@ -51,32 +51,105 @@ def get_ticket_by_id(ticket_id):
     """Busca um ticket pelo seu ID."""
     return Ticket.query.get(ticket_id)
 
-def add_reply_to_ticket(ticket_id, reply_text, user_email, attachments=None):
-    """Adiciona uma resposta a um chamado."""
-    ticket = get_ticket_by_id(ticket_id)
-    if not ticket:
-        return False
+def add_interaction(ticket_id, user_email, action_type, text=None, interaction_data=None, deadline=None, parent_id=None):
+    """Cria uma nova interação para um chamado."""
+    deadline_obj = None
+    if deadline:
+        try:
+            deadline_obj = datetime.fromisoformat(deadline)
+        except (ValueError, TypeError):
+            deadline_obj = None
 
-    new_reply = Response(
+    interaction = Interaction(
         ticket_id=ticket_id,
-        text=reply_text,
         user_email=user_email,
-        timestamp=datetime.utcnow()
+        action_type=action_type,
+        text=text,
+        interaction_data=interaction_data,
+        deadline=deadline_obj,
+        parent_id=parent_id
     )
-    
-    db.session.add(new_reply)
-    db.session.commit() # Commit para obter o ID da nova resposta
+    db.session.add(interaction)
+    db.session.commit()
+    return interaction
 
-    if attachments:
-        attachment_objects = _save_attachments(attachments, ticket_id, response_id=new_reply.id)
+def process_new_interaction(ticket_id, user_email, form_data, files):
+    """Processa o formulário para adicionar uma nova interação (comentário, ação, etc.)."""
+    action = form_data.get('action')
+    text = form_data.get('reply_text')
+    deadline = form_data.get('interaction_deadline')
+    external_system = form_data.get('external_system')
+    external_ticket_id = form_data.get('external_ticket_id')
+    
+    interaction_data = {}
+    if external_system and external_ticket_id:
+        interaction_data['external_system'] = external_system
+        interaction_data['external_ticket_id'] = external_ticket_id
+
+    if action == 'request_validation':
+        interaction_data['validation_status'] = 'pending'
+        new_interaction = add_interaction(
+            ticket_id, user_email, action_type='request_validation',
+            text=text, deadline=deadline,
+            interaction_data=interaction_data
+        )
+    else: # Ação padrão é 'comment'
+        new_interaction = add_interaction(
+            ticket_id, user_email, action_type='comment', text=text,
+            interaction_data=interaction_data if interaction_data else None
+        )
+
+    if files:
+        attachment_objects = _save_attachments(files, ticket_id, interaction_id=new_interaction.id)
         for att in attachment_objects:
             db.session.add(att)
-        db.session.commit()
-        
-    return True
+    db.session.commit()
 
-def create_ticket(title, urgency, sector, description, user_email, attachments=None):
+
+def process_validation_response(ticket_id, user_email, form_data):
+    """Processa a resposta do usuário a um pedido de validação."""
+    parent_interaction_id = form_data.get('parent_interaction_id')
+    validation_status = form_data.get('validation_response') # 'approved' or 'rejected'
+    
+    parent_interaction = Interaction.query.get(parent_interaction_id)
+    if not parent_interaction or parent_interaction.ticket_id != ticket_id:
+        return # Segurança: não pertence a este ticket
+    
+    # Atualiza a interação PAI (o pedido) com o resultado
+    parent_interaction.interaction_data['validation_status'] = validation_status
+    
+    # Cria a interação FILHA (a resposta)
+    add_interaction(
+        ticket_id=ticket_id,
+        user_email=user_email,
+        action_type='provide_validation',
+        parent_id=parent_interaction_id,
+        interaction_data={'validation_status': validation_status}
+    )
+    db.session.commit()
+
+def get_or_create_tags(tag_names):
+    """Encontra tags existentes ou cria novas."""
+    tags = []
+    for tag_name in tag_names:
+        tag_name = tag_name.strip()
+        if tag_name:
+            tag = Tag.query.filter_by(name=tag_name).first()
+            if not tag:
+                tag = Tag(name=tag_name)
+                db.session.add(tag)
+            tags.append(tag)
+    return tags
+
+def create_ticket(title, urgency, sector, description, user_email, attachments=None, deadline=None, tags_string=None):
     """Cria um novo chamado e o salva no banco de dados."""
+    deadline_obj = None
+    if deadline:
+        try:
+            deadline_obj = datetime.fromisoformat(deadline)
+        except ValueError:
+            deadline_obj = None
+
     new_ticket = Ticket(
         title=title,
         urgency=urgency,
@@ -84,10 +157,16 @@ def create_ticket(title, urgency, sector, description, user_email, attachments=N
         description=description,
         user_email=user_email,
         status='Aberto',
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
+        deadline=deadline_obj
     )
+
+    if tags_string:
+        tag_names = [name.strip() for name in tags_string.split(',')]
+        new_ticket.tags = get_or_create_tags(tag_names)
+
     db.session.add(new_ticket)
-    db.session.commit() # Commit para obter o ID do novo ticket
+    db.session.commit()
 
     if attachments:
         attachment_objects = _save_attachments(attachments, ticket_id=new_ticket.id)
@@ -97,11 +176,43 @@ def create_ticket(title, urgency, sector, description, user_email, attachments=N
     
     return new_ticket.id
 
-def update_ticket_status(ticket_id, new_status):
-    """Atualiza o status de um chamado."""
+def update_ticket_admin(ticket_id, user_email, new_status=None, new_assignee=None):
+    """Atualiza o status e/ou o responsável do ticket, criando logs de interação."""
     ticket = get_ticket_by_id(ticket_id)
-    if ticket:
+    if not ticket:
+        return False
+
+    if new_status and ticket.status != new_status:
+        old_status = ticket.status
         ticket.status = new_status
-        db.session.commit()
-        return True
-    return False
+        data = {'old_status': old_status, 'new_status': new_status}
+        add_interaction(ticket_id, user_email, 'status_change', interaction_data=data)
+
+    if new_assignee is not None and ticket.assigned_user_email != new_assignee:
+        old_assignee = ticket.assigned_user_email
+        ticket.assigned_user_email = new_assignee if new_assignee else None
+        data = {'old_assignee': old_assignee, 'new_assignee': new_assignee}
+        add_interaction(ticket_id, user_email, 'assign', interaction_data=data)
+        
+    db.session.commit()
+    return True
+
+def update_interaction_status(interaction_id, new_status, user_email):
+    """Atualiza o status de uma interação de validação."""
+    interaction = Interaction.query.get(interaction_id)
+    if not interaction or interaction.action_type != 'request_validation':
+        return False
+
+    old_status = interaction.interaction_data.get('validation_status', 'pending')
+    interaction.interaction_data['validation_status'] = new_status
+    
+    # Cria uma interação filha para registrar a mudança manual
+    add_interaction(
+        ticket_id=interaction.ticket_id,
+        user_email=user_email,
+        action_type='status_change_manual',
+        parent_id=interaction.id,
+        interaction_data={'old_status': old_status, 'new_status': new_status}
+    )
+    db.session.commit()
+    return True

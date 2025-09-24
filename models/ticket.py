@@ -3,6 +3,16 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+# Tabela de associação para o relacionamento muitos-para-muitos entre Ticket e Tag
+ticket_tags = db.Table('ticket_tags',
+    db.Column('ticket_id', db.Integer, db.ForeignKey('ticket.id'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True)
+)
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
@@ -13,21 +23,37 @@ class Ticket(db.Model):
     status = db.Column(db.String(50), default='Aberto')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    deadline = db.Column(db.DateTime, nullable=True)
+    assigned_user_email = db.Column(db.String(120), nullable=True)
+    
     attachments = db.relationship('Attachment', backref='ticket', lazy=True, cascade="all, delete-orphan")
-    responses = db.relationship('Response', backref='ticket', lazy=True, cascade="all, delete-orphan", order_by='Response.timestamp')
+    interactions = db.relationship('Interaction', backref='ticket', lazy=True, cascade="all, delete-orphan", 
+                                   order_by='Interaction.timestamp',
+                                   primaryjoin="Interaction.ticket_id == Ticket.id and Interaction.parent_id == None")
+    tags = db.relationship('Tag', secondary=ticket_tags, lazy='subquery',
+                           backref=db.backref('tickets', lazy=True))
 
-class Response(db.Model):
+class Interaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
     user_email = db.Column(db.String(120), nullable=False)
-    text = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
-    attachments = db.relationship('Attachment', backref='response', lazy=True, cascade="all, delete-orphan")
+    action_type = db.Column(db.String(50), nullable=False, default='comment') 
+    text = db.Column(db.Text, nullable=True) 
+    interaction_data = db.Column(db.JSON, nullable=True)
+    
+    # NOVOS CAMPOS PARA SUB-TAREFAS E PRAZOS
+    deadline = db.Column(db.DateTime, nullable=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('interaction.id'), nullable=True)
+    
+    attachments = db.relationship('Attachment', backref='interaction', lazy=True, cascade="all, delete-orphan")
+    children = db.relationship('Interaction', backref=db.backref('parent', remote_side=[id]),
+                               lazy=True, cascade="all, delete-orphan")
 
 class Attachment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'))
-    response_id = db.Column(db.Integer, db.ForeignKey('response.id'))
+    interaction_id = db.Column(db.Integer, db.ForeignKey('interaction.id'))
     filepath = db.Column(db.String(300), nullable=False)
     filename = db.Column(db.String(150), nullable=False)
