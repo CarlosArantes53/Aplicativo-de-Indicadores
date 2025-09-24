@@ -36,6 +36,7 @@ def create_app():
         return Markup(html)
 
     app.jinja_env.filters['nl2br'] = nl2br
+    app.jinja_env.filters['autolink'] = autolink
     # --- FIM DO NOVO FILTRO ---
 
     if not app.config.get('DEBUG', False):

@@ -1,7 +1,10 @@
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from models.ticket import db, Ticket, Interaction, Attachment, Tag
+from models.ticket import db, Ticket, Interaction, Attachment
+from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy import desc, asc
+import random
 
 UPLOAD_FOLDER = 'uploads/tickets'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'mp4', 'mov', 'avi'}
@@ -39,13 +42,51 @@ def _save_attachments(files, ticket_id, interaction_id=None):
     return attachment_objects
 
 
-def get_all_tickets():
-    """Carrega todos os chamados do banco de dados."""
-    return Ticket.query.order_by(Ticket.created_at.desc()).all()
+def get_all_tickets(filters=None, sorting=None):
+    """Carrega todos os chamados do banco de dados com filtros e ordenação."""
+    query = Ticket.query
 
-def get_user_tickets(user_email):
-    """Carrega os chamados de um usuário específico."""
-    return Ticket.query.filter_by(user_email=user_email).order_by(Ticket.created_at.desc()).all()
+    if filters:
+        if filters.get('status'):
+            query = query.filter(Ticket.status == filters['status'])
+        if filters.get('urgency'):
+            query = query.filter(Ticket.urgency == filters['urgency'])
+        if filters.get('sector'):
+            query = query.filter(Ticket.sector == filters['sector'])
+        if filters.get('title'):
+            query = query.filter(Ticket.title.ilike(f"%{filters['title']}%"))
+
+    if sorting and sorting.get('by') in ['id', 'urgency', 'status', 'created_at', 'title', 'sector']:
+        direction = desc if sorting.get('order') == 'desc' else asc
+        query = query.order_by(direction(getattr(Ticket, sorting['by'])))
+    else:
+        # Default sort
+        query = query.order_by(Ticket.created_at.desc())
+
+    return query.all()
+
+def get_user_tickets(user_email, filters=None, sorting=None):
+    """Carrega os chamados de um usuário específico com filtros e ordenação."""
+    query = Ticket.query.filter_by(user_email=user_email)
+
+    if filters:
+        if filters.get('status'):
+            query = query.filter(Ticket.status == filters['status'])
+        if filters.get('urgency'):
+            query = query.filter(Ticket.urgency == filters['urgency'])
+        if filters.get('sector'):
+            query = query.filter(Ticket.sector == filters['sector'])
+        if filters.get('title'):
+            query = query.filter(Ticket.title.ilike(f"%{filters['title']}%"))
+
+    if sorting and sorting.get('by') in ['id', 'urgency', 'status', 'created_at', 'title', 'sector']:
+        direction = desc if sorting.get('order') == 'desc' else asc
+        query = query.order_by(direction(getattr(Ticket, sorting['by'])))
+    else:
+        # Default sort
+        query = query.order_by(Ticket.created_at.desc())
+
+    return query.all()
 
 def get_ticket_by_id(ticket_id):
     """Busca um ticket pelo seu ID."""
@@ -82,7 +123,7 @@ def process_new_interaction(ticket_id, user_email, form_data, files):
     external_ticket_id = form_data.get('external_ticket_id')
     
     interaction_data = {}
-    if external_system and external_ticket_id:
+    if external_system or external_ticket_id:
         interaction_data['external_system'] = external_system
         interaction_data['external_ticket_id'] = external_ticket_id
 
@@ -103,7 +144,7 @@ def process_new_interaction(ticket_id, user_email, form_data, files):
         attachment_objects = _save_attachments(files, ticket_id, interaction_id=new_interaction.id)
         for att in attachment_objects:
             db.session.add(att)
-    db.session.commit()
+        db.session.commit()
 
 
 def process_validation_response(ticket_id, user_email, form_data):
@@ -117,6 +158,7 @@ def process_validation_response(ticket_id, user_email, form_data):
     
     # Atualiza a interação PAI (o pedido) com o resultado
     parent_interaction.interaction_data['validation_status'] = validation_status
+    flag_modified(parent_interaction, "interaction_data")
     
     # Cria a interação FILHA (a resposta)
     add_interaction(
@@ -128,20 +170,7 @@ def process_validation_response(ticket_id, user_email, form_data):
     )
     db.session.commit()
 
-def get_or_create_tags(tag_names):
-    """Encontra tags existentes ou cria novas."""
-    tags = []
-    for tag_name in tag_names:
-        tag_name = tag_name.strip()
-        if tag_name:
-            tag = Tag.query.filter_by(name=tag_name).first()
-            if not tag:
-                tag = Tag(name=tag_name)
-                db.session.add(tag)
-            tags.append(tag)
-    return tags
-
-def create_ticket(title, urgency, sector, description, user_email, attachments=None, deadline=None, tags_string=None):
+def create_ticket(title, urgency, sector, description, user_email, attachments=None, deadline=None):
     """Cria um novo chamado e o salva no banco de dados."""
     deadline_obj = None
     if deadline:
@@ -161,58 +190,4 @@ def create_ticket(title, urgency, sector, description, user_email, attachments=N
         deadline=deadline_obj
     )
 
-    if tags_string:
-        tag_names = [name.strip() for name in tags_string.split(',')]
-        new_ticket.tags = get_or_create_tags(tag_names)
-
     db.session.add(new_ticket)
-    db.session.commit()
-
-    if attachments:
-        attachment_objects = _save_attachments(attachments, ticket_id=new_ticket.id)
-        for att in attachment_objects:
-            db.session.add(att)
-        db.session.commit()
-    
-    return new_ticket.id
-
-def update_ticket_admin(ticket_id, user_email, new_status=None, new_assignee=None):
-    """Atualiza o status e/ou o responsável do ticket, criando logs de interação."""
-    ticket = get_ticket_by_id(ticket_id)
-    if not ticket:
-        return False
-
-    if new_status and ticket.status != new_status:
-        old_status = ticket.status
-        ticket.status = new_status
-        data = {'old_status': old_status, 'new_status': new_status}
-        add_interaction(ticket_id, user_email, 'status_change', interaction_data=data)
-
-    if new_assignee is not None and ticket.assigned_user_email != new_assignee:
-        old_assignee = ticket.assigned_user_email
-        ticket.assigned_user_email = new_assignee if new_assignee else None
-        data = {'old_assignee': old_assignee, 'new_assignee': new_assignee}
-        add_interaction(ticket_id, user_email, 'assign', interaction_data=data)
-        
-    db.session.commit()
-    return True
-
-def update_interaction_status(interaction_id, new_status, user_email):
-    """Atualiza o status de uma interação de validação."""
-    interaction = Interaction.query.get(interaction_id)
-    if not interaction or interaction.action_type != 'request_validation':
-        return False
-
-    old_status = interaction.interaction_data.get('validation_status', 'pending')
-    interaction.interaction_data['validation_status'] = new_status
-    
-    # Cria uma interação filha para registrar a mudança manual
-    add_interaction(
-        ticket_id=interaction.ticket_id,
-        user_email=user_email,
-        action_type='status_change_manual',
-        parent_id=interaction.id,
-        interaction_data={'old_status': old_status, 'new_status': new_status}
-    )
-    db.session.commit()
-    return True

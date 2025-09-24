@@ -2,6 +2,30 @@
 
 {% block title %}Detalhes do Chamado{% endblock %}
 
+{% macro render_attachments(attachments) %}
+    {% if attachments %}
+        <div class="carousel-container" style="margin-top: 1rem;">
+            <div class="carousel-slides">
+                {% for attachment in attachments %}
+                    <div class="carousel-slide">
+                        {% if attachment.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')) %}
+                            <a href="{{ url_for('tickets.download_file', attachment_id=attachment.id) }}" target="_blank">
+                                <img src="{{ url_for('tickets.download_file', attachment_id=attachment.id) }}" alt="{{ attachment.filename }}">
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('tickets.download_file', attachment_id=attachment.id) }}" target="_blank">{{ attachment.filename }}</a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% if attachments|length > 1 %}
+                <button class="carousel-button prev" onclick="moveSlide(this, -1)">&#10094;</button>
+                <button class="carousel-button next" onclick="moveSlide(this, 1)">&#10095;</button>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endmacro %}
+
 {% block content %}
 <style>
     .admin-reply, .user-reply {
@@ -35,25 +59,34 @@
         display: inline-block;
         margin-top: 0.5rem;
     }
+    .external-ticket-link a {
+        color: var(--accent-color);
+        text-decoration: none;
+    }
+     .external-ticket-link a:hover {
+        text-decoration: underline;
+    }
 </style>
 
 <h1>Detalhes do Chamado #{{ ticket.id }}</h1>
 
 <div class="box-container" style="margin-top: 2rem;">
     <h3>{{ ticket.title }}</h3>
-    <p><strong>Status:</strong> {{ ticket.status }}</p>
+    <p style="margin-top: 1rem;"><strong>Status:</strong> {{ ticket.status }}</p>
     <p><strong>Setor:</strong> {{ ticket.sector }}</p>
     <p><strong>Urgência:</strong> {{ ticket.urgency }}</p>
     <p><strong>Prazo:</strong> {{ ticket.deadline.strftime('%d/%m/%Y %H:%M') if ticket.deadline else 'Não definido' }}</p>
     <p><strong>Atribuído a:</strong> {{ ticket.assigned_user_email or 'Ninguém' }}</p>
     <p><strong>Descrição:</strong><br>{{ ticket.description|nl2br }}</p>
+    
+    {{ render_attachments(ticket.attachments) }}
 </div>
 
 {% if is_admin %}
 <div class="box-container" style="margin-top: 2rem;">
     <h3>Ações do Administrador</h3>
     <form method="post" style="margin-top: 1.5rem;">
-        <input type="hidden" name="action" value="admin_update">
+        <input type="hidden" name="form_action" value="admin_update">
         <div class="input-group" style="display: inline-block; margin-right: 1rem;">
             <label for="status">Alterar Status:</label>
             <select id="status" name="status">
@@ -98,7 +131,7 @@
                         <form method="post" style="display: inline-block; margin-left: 1rem;">
                             <input type="hidden" name="form_action" value="update_interaction_status">
                             <input type="hidden" name="interaction_id" value="{{ interaction.id }}">
-                            <select name="new_status" onchange="this.form.submit()">
+                            <select name="new_status" onchange="this.form.submit()" class="interaction-status-select">
                                 <option value="pending" {% if validation_status == 'pending' %}selected{% endif %}>Pendente</option>
                                 <option value="completed" {% if validation_status == 'completed' %}selected{% endif %}>Concluído</option>
                                 <option value="canceled" {% if validation_status == 'canceled' %}selected{% endif %}>Cancelado</option>
@@ -119,9 +152,16 @@
                 {% endif %}
             </div>
 
-            {% if interaction.interaction_data.external_system %}
+            {{ render_attachments(interaction.attachments) }}
+
+            {% if interaction.interaction_data.external_ticket_id %}
                 <div class="external-ticket-link">
-                    Vinculado ao chamado: <strong>{{ interaction.interaction_data.external_system }} #{{ interaction.interaction_data.external_ticket_id }}</strong>
+                    {% if interaction.interaction_data.external_system %}
+                        Vinculado a: <strong>{{ interaction.interaction_data.external_system }} #</strong>
+                    {% else %}
+                        Link Externo: 
+                    {% endif %}
+                    {{ interaction.interaction_data.external_ticket_id | autolink | safe }}
                 </div>
             {% endif %}
             
@@ -171,31 +211,29 @@
         </div>
         
         {% if is_admin %}
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
-            <div class="input-group" style="flex: 1 1 200px; margin-bottom: 0;">
+        <div class="form-grid">
+            <div class="input-group">
                 <label for="action">Tipo de Ação:</label>
                 <select id="action" name="action">
                     <option value="comment">Comentário</option>
                     <option value="request_validation">Solicitar Validação</option>
                 </select>
             </div>
-            <div class="input-group" style="flex: 1 1 200px; margin-bottom: 0;">
+            <div class="input-group">
                 <label for="interaction_deadline">Prazo da Ação (Opcional):</label>
                 <input type="datetime-local" id="interaction_deadline" name="interaction_deadline" min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
             </div>
-        </div>
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 1rem;">
-             <div class="input-group" style="flex: 1 1 150px; margin-bottom: 0;">
-                <label for="external_system">Vincular Sistema Externo:</label>
+            <div class="input-group">
+                <label for="external_system">Sistema Externo (Opcional):</label>
                 <select name="external_system">
                     <option value="">Nenhum</option>
                     <option value="SPS">SPS</option>
                     <option value="GDC">GDC</option>
                 </select>
             </div>
-            <div class="input-group" style="flex: 1 1 200px; margin-bottom: 0;">
-                <label for="external_ticket_id">ID do Chamado Externo:</label>
-                <input type="text" name="external_ticket_id" placeholder="ID do Chamado Externo">
+            <div class="input-group">
+                <label for="external_ticket_id">ID ou Link do Chamado Externo:</label>
+                <input type="text" name="external_ticket_id" placeholder="ID ou URL do chamado">
             </div>
         </div>
         {% endif %}
@@ -213,51 +251,27 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Inicializa todos os carrosseis presentes na página
         document.querySelectorAll('.carousel-container').forEach(function(container) {
             const slidesContainer = container.querySelector('.carousel-slides');
-            const slides = container.querySelectorAll('.carousel-slide');
-            if (!slidesContainer || slides.length === 0) return;
-
-            // Guarda índice no dataset do container
+            if (!slidesContainer) return;
             container.dataset.slideIndex = 0;
-
-            function showSlide(index) {
-                let i = index;
-                const total = slides.length;
-                if (i >= total) i = 0;
-                if (i < 0) i = total - 1;
-                container.dataset.slideIndex = i;
-                slidesContainer.style.transform = `translateX(-${i * 100}%)`;
-            }
-
-            // Expor função para uso dos botões (através do onclick)
-            container.showSlide = showSlide;
-
-            // Inicializa botões
-            const prev = container.querySelector('.prev');
-            const next = container.querySelector('.next');
-            if (prev) prev.addEventListener('click', function() {
-                const idx = parseInt(container.dataset.slideIndex || 0, 10);
-                container.showSlide(idx - 1);
-            });
-            if (next) next.addEventListener('click', function() {
-                const idx = parseInt(container.dataset.slideIndex || 0, 10);
-                container.showSlide(idx + 1);
-            });
-
-            // Mostra primeira slide
-            showSlide(0);
         });
-
-        // Função global chamada pelos controles via onclick (passa o elemento do botão e o deslocamento)
-        window.moveSlide = function(buttonElem, n) {
-            if (!buttonElem) return;
-            const container = buttonElem.closest('.carousel-container');
-            if (!container || !container.showSlide) return;
-            const idx = parseInt(container.dataset.slideIndex || 0, 10);
-            container.showSlide(idx + n);
-        };
     });
+
+    function moveSlide(buttonElem, n) {
+        const container = buttonElem.closest('.carousel-container');
+        const slidesContainer = container.querySelector('.carousel-slides');
+        const slides = container.querySelectorAll('.carousel-slide');
+        if (!container || !slidesContainer || slides.length <= 1) return;
+
+        let index = parseInt(container.dataset.slideIndex || 0, 10);
+        index += n;
+
+        if (index >= slides.length) index = 0;
+        if (index < 0) index = slides.length - 1;
+
+        container.dataset.slideIndex = index;
+        slidesContainer.style.transform = `translateX(-${index * 100}%)`;
+    }
 </script>
 {% endblock %}

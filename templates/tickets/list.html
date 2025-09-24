@@ -2,52 +2,114 @@
 
 {% block title %}Meus Chamados{% endblock %}
 
+{# --- Helper para gerar links de ordenação (CORRIGIDO) --- #}
+{% macro sortable_header(column_key, column_name, current_sorting, current_filters) %}
+    {% set next_order = 'asc' if current_sorting.by == column_key and current_sorting.order == 'desc' else 'desc' %}
+    {% set sort_indicator = '' %}
+    {% if current_sorting.by == column_key %}
+        {% set sort_indicator = '▲' if current_sorting.order == 'asc' else '▼' %}
+    {% endif %}
+    {# Cria uma cópia dos filtros e remove as chaves de ordenação para evitar conflito #}
+    {% set query_params = current_filters.copy() %}
+    {% set _ = query_params.pop('sort_by', None) %}
+    {% set _ = query_params.pop('order', None) %}
+    <a href="{{ url_for('tickets.list_tickets', sort_by=column_key, order=next_order, **query_params) }}">
+        {{ column_name }} <span class="sort-indicator">{{ sort_indicator }}</span>
+    </a>
+{% endmacro %}
+
+
 {% block content %}
     <h1>Meus Chamados</h1>
     <a href="{{ url_for('tickets.create_ticket') }}" class="btn">Abrir Novo Chamado</a>
+
+    {# --- Formulário de Filtros --- #}
+    <div class="filter-box" style="margin-top: 2rem;">
+        <form method="get" action="{{ url_for('tickets.list_tickets') }}" class="filter-form">
+            <div class="input-group">
+                <label for="title">Buscar Título</label>
+                <input type="text" name="title" id="title" value="{{ current_filters.get('title', '') }}">
+            </div>
+            <div class="input-group">
+                <label for="status">Status</label>
+                <select name="status" id="status">
+                    <option value="">Todos</option>
+                    {% for status in filter_options.statuses %}
+                    <option value="{{ status }}" {% if current_filters.get('status') == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="urgency">Urgência</label>
+                <select name="urgency" id="urgency">
+                    <option value="">Todas</option>
+                    {% for urgency in filter_options.urgencies %}
+                    <option value="{{ urgency }}" {% if current_filters.get('urgency') == urgency %}selected{% endif %}>{{ urgency }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="sector">Setor</label>
+                <select name="sector" id="sector">
+                    <option value="">Todos</option>
+                     {% for sector in filter_options.sectors %}
+                    <option value="{{ sector }}" {% if current_filters.get('sector') == sector %}selected{% endif %}>{{ sector }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn">Filtrar</button>
+        </form>
+    </div>
     
     {% if tickets %}
-        <table class="table-users" style="margin-top: 2rem;">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    {% if is_admin %}
-                    <th>Usuário</th>
-                    <th>Atribuído a</th>
-                    {% endif %}
-                    <th>Título</th>
-                    <th>Tags</th>
-                    <th>Setor</th>
-                    <th>Urgência</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ticket in tickets %}
-                <tr class="urgency-{{ ticket.urgency.lower() }}">
-                    <td>#{{ ticket.id }}</td>
-                    {% if is_admin %}
-                    <td>{{ ticket.user_email }}</td>
-                    <td>{{ ticket.assigned_user_email or 'N/A' }}</td>
-                    {% endif %}
-                    <td>{{ ticket.title }}</td>
-                    <td>
-                        {% for tag in ticket.tags %}
-                            <span class="tag">{{ tag.name }}</span>
-                        {% endfor %}
-                    </td>
-                    <td>{{ ticket.sector }}</td>
-                    <td>{{ ticket.urgency }}</td>
-                    <td>{{ ticket.status }}</td>
-                    <td>
-                        <a href="{{ url_for('tickets.view_ticket', ticket_id=ticket.id) }}">Ver Detalhes</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="box-container" style="padding: 0; overflow-x: auto;">
+            <table class="table-users">
+                <thead>
+                    <tr>
+                        <th class="col-id">{{ sortable_header('id', 'ID', current_sorting, current_filters) }}</th>
+                        {% if is_admin %}
+                        <th class="col-user">Usuário</th>
+                        <th class="col-assignee">Atribuído a</th>
+                        {% endif %}
+                        <th class="col-title">{{ sortable_header('title', 'Título', current_sorting, current_filters) }}</th>
+                        <th class="col-sector">{{ sortable_header('sector', 'Setor', current_sorting, current_filters) }}</th>
+                        <th class="col-urgency">{{ sortable_header('urgency', 'Urgência', current_sorting, current_filters) }}</th>
+                        <th class="col-status">{{ sortable_header('status', 'Status', current_sorting, current_filters) }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr data-href="{{ url_for('tickets.view_ticket', ticket_id=ticket.id) }}">
+                        <td class="col-id">#{{ ticket.id }}</td>
+                        {% if is_admin %}
+                        <td class="col-user" title="{{ ticket.user_email }}">{{ ticket.user_email }}</td>
+                        <td class="col-assignee" title="{{ ticket.assigned_user_email or 'N/A' }}">{{ ticket.assigned_user_email or 'N/A' }}</td>
+                        {% endif %}
+                        <td class="col-title" title="{{ ticket.title }}">{{ ticket.title }}</td>
+                        <td class="col-sector">{{ ticket.sector }}</td>
+                        <td class="col-urgency">
+                            <span class="urgency-badge urgency-{{ ticket.urgency.lower().replace('é', 'e').replace('í', 'i') }}">{{ ticket.urgency }}</span>
+                        </td>
+                        <td class="col-status">{{ ticket.status }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% else %}
-        <p style="margin-top: 2rem;">Você ainda não abriu nenhum chamado.</p>
+        <div class="alert alert-info" style="margin-top: 2rem;">Nenhum chamado encontrado com os filtros aplicados.</div>
     {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const rows = document.querySelectorAll('tr[data-href]');
+    rows.forEach(row => {
+        row.addEventListener('click', () => {
+            window.location.href = row.dataset.href;
+        });
+    });
+});
+</script>
 {% endblock %}

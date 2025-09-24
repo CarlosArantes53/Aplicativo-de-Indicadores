@@ -138,7 +138,9 @@ main.container {
     font-size: 0.9rem;
 }
 
-.input-group input {
+.input-group input,
+.input-group select,
+.input-group textarea {
     width: 100%;
     padding: 0.8rem;
     border: 1px solid var(--border-color);
@@ -147,6 +149,24 @@ main.container {
     color: var(--text-primary);
     box-sizing: border-box;
     transition: background-color 0.3s;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.input-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.input-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
 }
 
 .btn {
@@ -369,4 +389,157 @@ footer.footer {
 
 .btn-filter:hover {
     background-color: #f0de8a;
+}
+
+/* --- ESTILOS ATUALIZADOS E NOVOS --- */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+.form-grid .input-group {
+    margin-bottom: 0;
+}
+
+.interaction-status-select {
+    display: inline-block;
+    width: auto;
+    padding: 0.3rem 1.8rem 0.3rem 0.6rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23cbd5e0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.2rem center;
+    background-repeat: no-repeat;
+    background-size: 1.2em 1.2em;
+    cursor: pointer;
+}
+
+.tag-container {
+    margin-top: 1rem;
+}
+
+.tag-balloon {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: #fff;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+}
+
+.carousel-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    margin-top: 1rem;
+}
+.carousel-slides {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+.carousel-slide {
+    min-width: 100%;
+    box-sizing: border-box;
+}
+.carousel-slide img {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    display: block;
+}
+.carousel-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    z-index: 100;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    line-height: 20px;
+    text-align: center;
+    font-size: 20px;
+}
+.prev { left: 10px; }
+.next { right: 10px; }
+
+/* --- ESTILOS PARA LISTA DE TICKETS --- */
+.table-users {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.table-users td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.table-users tbody tr {
+    cursor: pointer;
+}
+
+.urgency-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+    white-space: nowrap;
+}
+
+.urgency-critica { background-color: #e53e3e; }
+.urgency-alta { background-color: #dd6b20; }
+.urgency-media { background-color: #d69e2e; }
+.urgency-baixa { background-color: #3182ce; }
+
+.filter-box {
+    background-color: var(--secondary-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+    box-shadow: var(--box-shadow);
+}
+
+.filter-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    align-items: flex-end;
+}
+.filter-form .input-group {
+    margin-bottom: 0;
+}
+.filter-form .btn {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+}
+
+.table-users th a {
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.table-users th a:hover {
+    color: var(--accent-color);
+}
+.sort-indicator {
+    font-size: 0.8em;
 }

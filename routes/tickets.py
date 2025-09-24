@@ -13,14 +13,41 @@ tickets_bp = Blueprint('tickets', __name__, url_prefix='/tickets')
 def list_tickets():
     user_roles = session['user'].get('roles', {})
     is_admin = 'admin' in user_roles
-    
+
+    # Coleta de parâmetros de filtro e ordenação da URL
+    filters = {
+        'status': request.args.get('status', ''),
+        'urgency': request.args.get('urgency', ''),
+        'sector': request.args.get('sector', ''),
+        'title': request.args.get('title', '')
+    }
+    # Remove chaves vazias para não filtrar por ''
+    filters = {k: v for k, v in filters.items() if v}
+
+    sorting = {
+        'by': request.args.get('sort_by', 'created_at'),
+        'order': request.args.get('order', 'desc')
+    }
+
     if is_admin:
-        tickets = ticket_service.get_all_tickets()
+        tickets = ticket_service.get_all_tickets(filters=filters, sorting=sorting)
     else:
         user_email = session['user']['email']
-        tickets = ticket_service.get_user_tickets(user_email)
-        
-    return render_template('tickets/list.html', tickets=tickets, is_admin=is_admin)
+        tickets = ticket_service.get_user_tickets(user_email, filters=filters, sorting=sorting)
+
+    # Opções para os dropdowns de filtro
+    filter_options = {
+        'statuses': ['Aberto', 'Em Andamento', 'Aguardando Resposta', 'Fechado'],
+        'urgencies': ['Baixa', 'Média', 'Alta', 'Crítica'],
+        'sectors': ['TI', 'Financeiro', 'Comercial', 'RH', 'Operacional']
+    }
+
+    return render_template('tickets/list.html',
+                           tickets=tickets,
+                           is_admin=is_admin,
+                           filter_options=filter_options,
+                           current_filters=request.args,
+                           current_sorting=sorting)
 
 
 @tickets_bp.route('/new', methods=['GET', 'POST'])
@@ -36,8 +63,7 @@ def create_ticket():
                 request.form.get('description'),
                 session['user']['email'],
                 request.files.getlist('attachments'),
-                request.form.get('deadline'),
-                request.form.get('tags')
+                request.form.get('deadline')
             )
             flash('Chamado criado com sucesso!', 'success')
             return redirect(url_for('tickets.list_tickets'))
