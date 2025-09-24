@@ -4,3 +4,4 @@ python-dotenv
 setuptools
 pandas
 pyarrow
+Flask-SQLAlchemy

@@ -2,19 +2,24 @@ import os
 from flask import Flask
 from flask_minify import Minify
 from markupsafe import escape, Markup
+from models.ticket import db  # Importação do objeto db
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.getenv('FLASK_SECRET_KEY')
+    
+    # Configuração do Banco de Dados SQLAlchemy
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///tickets.db')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Inicializa o banco de dados com o app
+    db.init_app(app)
 
     # Registrar filtro nl2br seguro para uso nos templates
     def nl2br(value):
         if value is None:
             return ''
-        # Primeiro escape para evitar XSS, depois convertemos quebras em <br/>
-        # Tratamos \r\n, \r e \n
         escaped = escape(value)
-        # substituir por <br/> mantendo segurança
         html = escaped.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>')
         return Markup(html)
 
@@ -26,12 +31,15 @@ def create_app():
     from routes.auth import auth_bp
     from routes.main import main_bp
     from routes.admin import admin_bp
-    from routes.tickets import tickets_bp  # Adicionar esta linha
+    from routes.tickets import tickets_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
-    app.register_blueprint(tickets_bp)  # Adicionar esta linha
+    app.register_blueprint(tickets_bp)
+
+    with app.app_context():
+        db.create_all()
 
     return app
 

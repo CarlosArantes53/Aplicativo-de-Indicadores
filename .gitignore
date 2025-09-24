@@ -5,3 +5,5 @@
 *.cpython-313.pyc
 *.parquet
 /uploads
+instance
+*.db

@@ -16,82 +16,218 @@
         padding-left: 1rem;
         border-radius: 5px;
     }
+    /* Estilos do Carrossel */
+    .carousel-container {
+        position: relative;
+        max-width: 800px;
+        margin: 2rem auto;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        background-color: var(--primary-bg);
+    }
+    .carousel-slides {
+        display: flex;
+        transition: transform 0.5s ease-in-out;
+        width: 100%;
+    }
+    .carousel-slide {
+        min-width: 100%;
+        box-sizing: border-box;
+        padding: 0.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .carousel-media {
+        width: 100%;
+        height: auto;
+        max-height: 70vh;
+        object-fit: contain;
+        display: block;
+    }
+    .carousel-file-placeholder {
+        width: 100%;
+        padding: 2rem;
+        text-align: center;
+        border: 2px dashed rgba(0,0,0,0.1);
+        border-radius: 6px;
+        background: rgba(0,0,0,0.03);
+    }
+    .carousel-container .prev, .carousel-container .next {
+        cursor: pointer;
+        position: absolute;
+        top: 50%;
+        width: auto;
+        padding: 16px;
+        margin-top: -22px;
+        color: white;
+        font-weight: bold;
+        font-size: 20px;
+        transition: 0.6s ease;
+        border-radius: 0 3px 3px 0;
+        user-select: none;
+        background-color: rgba(0,0,0,0.5);
+    }
+    .carousel-container .next {
+        right: 0;
+        border-radius: 3px 0 0 3px;
+    }
+    .carousel-container .prev:hover, .carousel-container .next:hover {
+        background-color: rgba(0,0,0,0.8);
+    }
 </style>
 
-    <h1>Detalhes do Chamado #{{ ticket.id }}</h1>
+<h1>Detalhes do Chamado #{{ ticket.id }}</h1>
 
-    <div class="box-container" style="margin-top: 2rem;">
-        <h3>{{ ticket.title }}</h3>
-        <p><strong>Status:</strong> {{ ticket.status }}</p>
-        <p><strong>Setor:</strong> {{ ticket.sector }}</p>
-        <p><strong>Urgência:</strong> {{ ticket.urgency }}</p>
-        <p><strong>Descrição:</strong><br>{{ ticket.description|nl2br }}</p>
-        {% if ticket.attachments %}
-            <p><strong>Anexos:</strong></p>
-            <ul>
-            {% for attachment in ticket.attachments %}
-                <li><a href="{{ url_for('static', filename='tickets/' + attachment.split('/')[-1]) }}" target="_blank">{{ attachment.split('/')[-1] }}</a></li>
-            {% endfor %}
-            </ul>
-        {% endif %}
+<div class="box-container" style="margin-top: 2rem;">
+    <h3>{{ ticket.title }}</h3>
+    <p><strong>Status:</strong> {{ ticket.status }}</p>
+    <p><strong>Setor:</strong> {{ ticket.sector }}</p>
+    <p><strong>Urgência:</strong> {{ ticket.urgency }}</p>
+    <p><strong>Descrição:</strong><br>{{ ticket.description|nl2br }}</p>
 
-        {% if is_admin %}
-        <form method="post" style="margin-top: 1.5rem;">
-            <div class="input-group" style="display: inline-block; margin-right: 1rem;">
-                <label for="status">Alterar Status:</label>
-                <select id="status" name="status">
-                    <option value="Aberto" {% if ticket.status == 'Aberto' %}selected{% endif %}>Aberto</option>
-                    <option value="Em Andamento" {% if ticket.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
-                    <option value="Aguardando Resposta" {% if ticket.status == 'Aguardando Resposta' %}selected{% endif %}>Aguardando Resposta</option>
-                    <option value="Fechado" {% if ticket.status == 'Fechado' %}selected{% endif %}>Fechado</option>
-                </select>
-            </div>
-            <button type="submit" class="btn">Atualizar Status</button>
-        </form>
-        {% endif %}
-    </div>
+    {% if is_admin %}
+    <form method="post" style="margin-top: 1.5rem;">
+        <div class="input-group" style="display: inline-block; margin-right: 1rem;">
+            <label for="status">Alterar Status:</label>
+            <select id="status" name="status">
+                <option value="Aberto" {% if ticket.status == 'Aberto' %}selected{% endif %}>Aberto</option>
+                <option value="Em Andamento" {% if ticket.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                <option value="Aguardando Resposta" {% if ticket.status == 'Aguardando Resposta' %}selected{% endif %}>Aguardando Resposta</option>
+                <option value="Fechado" {% if ticket.status == 'Fechado' %}selected{% endif %}>Fechado</option>
+            </select>
+        </div>
+        <button type="submit" class="btn">Atualizar Status</button>
+    </form>
+    {% endif %}
+</div>
 
-    <div class="box-container" style="margin-top: 2rem;">
-        <h3>Respostas</h3>
-        {% if ticket.responses|length > 0 %}
-            {% for reply in ticket.responses %}
-                <div class="reply {% if reply.user_email == ticket.user_email %}user-reply{% else %}admin-reply{% endif %}" 
-                    style="border-bottom: 1px solid var(--border-color); padding: 1rem; margin-bottom: 1rem;">
-                    {% set ts = reply.timestamp %}
-                        <p><strong>{{ reply.user_email }}</strong> em
-                            {% if ts %}
-                                {{ ts.strftime('%d/%m/%Y %H:%M') }}
-                            {% else %}
-                                (sem data)
-                            {% endif %}
-                        </p>
-                    <p>{{ reply.text|nl2br }}</p>
-                    {% if reply.attachments %}
-                        <p><strong>Anexos:</strong></p>
-                        <ul>
-                        {% for attachment in reply.attachments %}
-                            <li><a href="{{ url_for('static', filename='tickets/' + attachment.split('/')[-1]) }}" target="_blank">{{ attachment.split('/')[-1] }}</a></li>
-                        {% endfor %}
-                        </ul>
+<div class="box-container" style="margin-top: 2rem;">
+    <h3>Respostas</h3>
+
+    {# --- Macro para renderizar um carrossel (ticket-level ou reply-level) --- #}
+    {% macro render_carousel(attachments, carousel_id) %}
+        {% if attachments %}
+        <div class="carousel-container" id="carousel-{{ carousel_id }}">
+            <div class="carousel-slides">
+                {% for att in attachments %}
+                <div class="carousel-slide">
+                    {% set fname = att.filename.lower() %}
+                    {% if fname.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')) %}
+                        <img src="{{ url_for('tickets.download_file', attachment_id=att.id) }}" class="carousel-media" alt="{{ att.filename }}">
+                    {% elif fname.endswith(('.mp4', '.mov', '.avi', '.webm')) %}
+                        <video controls class="carousel-media">
+                            <source src="{{ url_for('tickets.download_file', attachment_id=att.id) }}">
+                            Seu navegador não suporta a tag de vídeo.
+                        </video>
+                    {% else %}
+                        {# Arquivo não visualizável diretamente — mostramos um slide com o nome (sem link) #}
+                        <div class="carousel-file-placeholder">
+                            <p><strong>{{ att.filename }}</strong></p>
+                            <p>Tipo de arquivo não visualizável no carrossel.</p>
+                        </div>
                     {% endif %}
                 </div>
-            {% endfor %}
-        {% else %}
-            <p>Nenhuma resposta ainda.</p>
+                {% endfor %}
+            </div>
+            {% if attachments|length > 1 %}
+            <a class="prev" role="button" aria-label="Anterior" onclick="moveSlide(this, -1)">&#10094;</a>
+            <a class="next" role="button" aria-label="Próximo" onclick="moveSlide(this, 1)">&#10095;</a>
+            {% endif %}
+        </div>
         {% endif %}
-        
-        <form method="post" style="margin-top: 2rem;" enctype="multipart/form-data">
-            <div class="input-group">
-                <label for="reply">Adicionar Resposta:</label>
-                <textarea id="reply" name="reply" rows="4" required></textarea>
-            </div>
-            <div class="input-group">
-                <label for="attachments">Anexos (Opcional):</label>
-                <input type="file" id="attachments" name="attachments" multiple>
-            </div>
-            <button type="submit" class="btn">Enviar Resposta</button>
-        </form>
-    </div>
+    {% endmacro %}
+    {# --- Fim do macro --- #}
 
-    <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-secondary" style="margin-top: 2rem;">Voltar para a Lista</a>
+    {% if ticket.responses|length > 0 %}
+        {% for reply in ticket.responses %}
+            <div class="reply {% if reply.user_email == ticket.user_email %}user-reply{% else %}admin-reply{% endif %}"
+                style="border-bottom: 1px solid var(--border-color); padding: 1rem; margin-bottom: 1rem;">
+                {% set ts = reply.timestamp %}
+                <p><strong>{{ reply.user_email }}</strong> em
+                    {% if ts %}
+                        {{ ts.strftime('%d/%m/%Y %H:%M') }}
+                    {% else %}
+                        (sem data)
+                    {% endif %}
+                </p>
+                <p>{{ reply.text|nl2br }}</p>
+
+                {# Substitui a lista de links por um carrossel (se houver anexos na resposta) --- #}
+                {% if reply.attachments %}
+                    {{ render_carousel(reply.attachments, 'reply-' ~ loop.index0) }}
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>Nenhuma resposta ainda.</p>
+    {% endif %}
+
+    <form method="post" style="margin-top: 2rem;" enctype="multipart/form-data">
+        <div class="input-group">
+            <label for="reply">Adicionar Resposta:</label>
+            <textarea id="reply" name="reply" rows="4"></textarea>
+        </div>
+        <div class="input-group">
+            <label for="attachments">Anexos (Opcional):</label>
+            <input type="file" id="attachments" name="attachments" multiple>
+        </div>
+        <button type="submit" class="btn">Enviar Resposta</button>
+    </form>
+</div>
+
+<a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-secondary" style="margin-top: 2rem;">Voltar para a Lista</a>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Inicializa todos os carrosseis presentes na página
+        document.querySelectorAll('.carousel-container').forEach(function(container) {
+            const slidesContainer = container.querySelector('.carousel-slides');
+            const slides = container.querySelectorAll('.carousel-slide');
+            if (!slidesContainer || slides.length === 0) return;
+
+            // Guarda índice no dataset do container
+            container.dataset.slideIndex = 0;
+
+            function showSlide(index) {
+                let i = index;
+                const total = slides.length;
+                if (i >= total) i = 0;
+                if (i < 0) i = total - 1;
+                container.dataset.slideIndex = i;
+                slidesContainer.style.transform = `translateX(-${i * 100}%)`;
+            }
+
+            // Expor função para uso dos botões (através do onclick)
+            container.showSlide = showSlide;
+
+            // Inicializa botões
+            const prev = container.querySelector('.prev');
+            const next = container.querySelector('.next');
+            if (prev) prev.addEventListener('click', function() {
+                const idx = parseInt(container.dataset.slideIndex || 0, 10);
+                container.showSlide(idx - 1);
+            });
+            if (next) next.addEventListener('click', function() {
+                const idx = parseInt(container.dataset.slideIndex || 0, 10);
+                container.showSlide(idx + 1);
+            });
+
+            // Mostra primeira slide
+            showSlide(0);
+        });
+
+        // Função global chamada pelos controles via onclick (passa o elemento do botão e o deslocamento)
+        window.moveSlide = function(buttonElem, n) {
+            if (!buttonElem) return;
+            const container = buttonElem.closest('.carousel-container');
+            if (!container || !container.showSlide) return;
+            const idx = parseInt(container.dataset.slideIndex || 0, 10);
+            container.showSlide(idx + n);
+        };
+    });
+</script>
 {% endblock %}
