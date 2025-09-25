@@ -47,11 +47,11 @@ def get_all_tickets(filters=None, sorting=None):
 
     if filters:
         if filters.get('status'):
-            query = query.filter(Ticket.status == filters['status'])
+            query = query.filter(Ticket.status.in_(filters['status']))
         if filters.get('urgency'):
-            query = query.filter(Ticket.urgency == filters['urgency'])
+            query = query.filter(Ticket.urgency.in_(filters['urgency']))
         if filters.get('sector'):
-            query = query.filter(Ticket.sector == filters['sector'])
+            query = query.filter(Ticket.sector.in_(filters['sector']))
         if filters.get('title'):
             query = query.filter(Ticket.title.ilike(f"%{filters['title']}%"))
 
@@ -70,11 +70,11 @@ def get_user_tickets(user_email, filters=None, sorting=None):
 
     if filters:
         if filters.get('status'):
-            query = query.filter(Ticket.status == filters['status'])
+            query = query.filter(Ticket.status.in_(filters['status']))
         if filters.get('urgency'):
-            query = query.filter(Ticket.urgency == filters['urgency'])
+            query = query.filter(Ticket.urgency.in_(filters['urgency']))
         if filters.get('sector'):
-            query = query.filter(Ticket.sector == filters['sector'])
+            query = query.filter(Ticket.sector.in_(filters['sector']))
         if filters.get('title'):
             query = query.filter(Ticket.title.ilike(f"%{filters['title']}%"))
 

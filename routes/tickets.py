@@ -14,11 +14,34 @@ def list_tickets():
     user_roles = session['user'].get('roles', {})
     is_admin = 'admin' in user_roles
 
-    # Coleta de parâmetros de filtro e ordenação da URL
+    # Opções para os dropdowns / checkboxes de filtro (definidas antes dos args)
+    filter_options = {
+        'statuses': ['Aberto', 'Em Andamento', 'Aguardando Resposta', 'Fechado'],
+        'urgencies': ['Baixa', 'Média', 'Alta', 'Crítica'],
+        'sectors': ['TI', 'Financeiro', 'Comercial', 'RH', 'Operacional']
+    }
+
+    # --- STATUS (comportamento que você já tinha) ---
+    statuses = request.args.getlist('status')
+    # se não veio nenhum parâmetro status (ou seja, 'status' não está na query), aplicar default parcial
+    if not statuses and 'status' not in request.args:
+        statuses = ['Aberto', 'Em Andamento', 'Aguardando Resposta']
+
+    # --- URGENCY e SECTOR: por padrão marcar todos os filtros ---
+    urgencies = request.args.getlist('urgency')
+    if not urgencies and 'urgency' not in request.args:
+        # marca todas as urgências por padrão
+        urgencies = list(filter_options['urgencies'])
+
+    sectors = request.args.getlist('sector')
+    if not sectors and 'sector' not in request.args:
+        # marca todos os setores por padrão
+        sectors = list(filter_options['sectors'])
+
     filters = {
-        'status': request.args.get('status', ''),
-        'urgency': request.args.get('urgency', ''),
-        'sector': request.args.get('sector', ''),
+        'status': statuses,
+        'urgency': urgencies,
+        'sector': sectors,
         'title': request.args.get('title', '')
     }
     # Remove chaves vazias para não filtrar por ''
@@ -35,19 +58,13 @@ def list_tickets():
         user_email = session['user']['email']
         tickets = ticket_service.get_user_tickets(user_email, filters=filters, sorting=sorting)
 
-    # Opções para os dropdowns de filtro
-    filter_options = {
-        'statuses': ['Aberto', 'Em Andamento', 'Aguardando Resposta', 'Fechado'],
-        'urgencies': ['Baixa', 'Média', 'Alta', 'Crítica'],
-        'sectors': ['TI', 'Financeiro', 'Comercial', 'RH', 'Operacional']
-    }
-
     return render_template('tickets/list.html',
                            tickets=tickets,
                            is_admin=is_admin,
                            filter_options=filter_options,
-                           current_filters=request.args,
+                           current_filters=filters,
                            current_sorting=sorting)
+
 
 
 @tickets_bp.route('/new', methods=['GET', 'POST'])

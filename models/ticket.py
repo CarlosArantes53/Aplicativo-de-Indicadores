@@ -35,11 +35,18 @@ class Ticket(db.Model):
     project_stages = db.relationship('ProjectStage', backref='ticket', lazy=True, cascade="all, delete-orphan")
     
     @property
+    def completed_stages_count(self):
+        return len([s for s in self.project_stages if s.status == 'Concluído'])
+
+    @property
+    def total_stages_count(self):
+        return len(self.project_stages)
+
+    @property
     def progress(self):
         if self.ticket_type != 'projeto' or not self.project_stages:
             return 0
-        completed_stages = [s for s in self.project_stages if s.status == 'Concluído']
-        return (len(completed_stages) / len(self.project_stages)) * 100 if self.project_stages else 0
+        return (self.completed_stages_count / self.total_stages_count) * 100 if self.project_stages else 0
 
 
 class Interaction(db.Model):

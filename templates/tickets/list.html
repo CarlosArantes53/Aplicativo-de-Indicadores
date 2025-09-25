@@ -8,37 +8,60 @@
     {# --- Formulário de Filtros --- #}
     <div class="filter-box" style="margin-top: 2rem;">
         <form method="get" action="{{ url_for('tickets.list_tickets') }}" class="filter-form">
+            {# --- Macro para gerar links de ordenação (CORRIGIDA) --- #}
+            {% macro sort_link(field, display_text) %}
+                {% set order_val = 'asc' if current_sorting.by == field and current_sorting.order == 'desc' else 'desc' %}
+                {% set url = url_for_with_query('tickets.list_tickets', sort_by=field, order=order_val) %}
+                <a href="{{ url }}" class="sort-link {% if current_sorting.by == field %}active{% endif %}">
+                    <span>{{ display_text }}</span>
+                    {% if current_sorting.by == field %}
+                        <span class="sort-indicator">{{ '▲' if current_sorting.order == 'asc' else '▼' }}</span>
+                    {% endif %}
+                </a>
+            {% endmacro %}
+
+
             <div class="input-group">
-                <label for="title">Buscar Título</label>
+                <label for="title">{{ sort_link('title', 'Buscar Título') }}</label>
                 <input type="text" name="title" id="title" value="{{ current_filters.get('title', '') }}">
             </div>
+            
             <div class="input-group">
-                <label for="status">Status</label>
-                <select name="status" id="status">
-                    <option value="">Todos</option>
+                <label for="status">{{ sort_link('status', 'Status') }}</label>
+                <div class="checkbox-group">
                     {% for status in filter_options.statuses %}
-                    <option value="{{ status }}" {% if current_filters.get('status') == status %}selected{% endif %}>{{ status }}</option>
+                    <label>
+                        <input type="checkbox" name="status" value="{{ status }}" {% if status in current_filters.get('status', []) %}checked{% endif %}>
+                        {{ status }}
+                    </label>
                     {% endfor %}
-                </select>
+                </div>
             </div>
+
             <div class="input-group">
-                <label for="urgency">Urgência</label>
-                <select name="urgency" id="urgency">
-                    <option value="">Todas</option>
+                <label for="urgency">{{ sort_link('urgency', 'Urgência') }}</label>
+                <div class="checkbox-group">
                     {% for urgency in filter_options.urgencies %}
-                    <option value="{{ urgency }}" {% if current_filters.get('urgency') == urgency %}selected{% endif %}>{{ urgency }}</option>
+                    <label>
+                        <input type="checkbox" name="urgency" value="{{ urgency }}" {% if urgency in current_filters.get('urgency', []) %}checked{% endif %}>
+                        {{ urgency }}
+                    </label>
                     {% endfor %}
-                </select>
+                </div>
             </div>
+
             <div class="input-group">
-                <label for="sector">Setor</label>
-                <select name="sector" id="sector">
-                    <option value="">Todos</option>
+                <label for="sector">{{ sort_link('sector', 'Setor') }}</label>
+                <div class="checkbox-group">
                      {% for sector in filter_options.sectors %}
-                    <option value="{{ sector }}" {% if current_filters.get('sector') == sector %}selected{% endif %}>{{ sector }}</option>
+                    <label>
+                        <input type="checkbox" name="sector" value="{{ sector }}" {% if sector in current_filters.get('sector', []) %}checked{% endif %}>
+                        {{ sector }}
+                    </label>
                     {% endfor %}
-                </select>
+                </div>
             </div>
+
             <button type="submit" class="btn">Filtrar</button>
         </form>
     </div>
@@ -57,9 +80,17 @@
                         #{{ ticket.id }} - {{ ticket.title }}
                     </h4>
                     {% if ticket.ticket_type == 'projeto' %}
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: {{ ticket.progress }}%;"></div>
-                    </div>
+                        <span class="progress-text">
+                            {{ ticket.completed_stages_count }} de {{ ticket.total_stages_count }} &bull; {{ "%.0f"|format(ticket.progress|float) }}%
+                        </span>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar 
+                                {% if ticket.progress < 50 %}progress-bar-low
+                                {% elif ticket.progress < 100 %}progress-bar-medium
+                                {% else %}progress-bar-high{% endif %}" 
+                                style="width: {{ ticket.progress }}%;">
+                            </div>
+                        </div>
                     {% endif %}
                     <span class="urgency-badge urgency-{{ ticket.urgency.lower().replace('é', 'e').replace('í', 'i') }}">{{ ticket.urgency }}</span>
                 </div>

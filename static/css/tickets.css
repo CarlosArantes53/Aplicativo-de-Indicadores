@@ -46,6 +46,8 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0
+ 0 20 20'%3e%3cpath stroke='%23cbd5e0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.2rem center;
     background-repeat: no-repeat;
     background-size: 1.2em 1.2em;
@@ -125,9 +127,9 @@
 
 .filter-form {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    align-items: flex-end;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    align-items: start;
 }
 .filter-form .input-group {
     margin-bottom: 0;
@@ -135,6 +137,7 @@
 .filter-form .btn {
     padding-top: 0.8rem;
     padding-bottom: 0.8rem;
+    align-self: end;
 }
 
 /* --- ESTILOS PARA A NOVA LISTA DE TICKETS (list.html) --- */
@@ -245,7 +248,64 @@
 
 .progress-bar {
     height: 100%;
-    background-color: #10b981;
     border-radius: 5px;
     transition: width 0.3s ease-in-out;
 }
+.progress-bar-low { background-color: #ef4444; }
+.progress-bar-medium { background-color: #f59e0b; }
+.progress-bar-high { background-color: #10b981; }
+
+.progress-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.sort-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: normal;
+    transition: color 0.2s;
+}
+
+.sort-link:hover {
+    color: var(--text-primary);
+}
+
+.sort-link.active {
+    color: var(--accent-color);
+    font-weight: bold;
+}
+
+.sort-indicator {
+    font-size: 1.2em;
+    line-height: 1;
+}
+
+/* Checkbox group for status filter */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    background-color: var(--primary-bg);
+    padding: 0.8rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;  /* <-- isso centraliza o input com o texto */
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+

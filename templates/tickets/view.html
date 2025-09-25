@@ -112,9 +112,9 @@
                     {% if interaction.action_type == 'request_validation' %}<strong>Pedido de Validação:</strong>{% endif %}
                     {{ interaction.text|nl2br }}
                 {% elif interaction.action_type == 'status_change' %}
-                    <p>Status do chamado alterado de <strong>{{ interaction.interaction_data.old_status }}</strong> para <strong>{{ interaction.interaction_data.new_status }}</strong>.</p>
+                    <p>Status <strong>{{ interaction.interaction_data.old_status }}</strong> ▶ <strong>{{ interaction.interaction_data.new_status }}</strong>.</p>
                 {% elif interaction.action_type == 'assign' %}
-                    <p>Chamado atribuído a <strong>{{ interaction.interaction_data.new_assignee or 'Ninguém' }}</strong> (antes: {{ interaction.interaction_data.old_assignee or 'Ninguém' }}).</p>
+                    <p>Chamado atribuído a <strong>{{ interaction.interaction_data.new_assignee or 'Ninguém' }}</strong></p>
                 {% endif %}
             </div>
 

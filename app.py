@@ -1,9 +1,10 @@
 import os
-from flask import Flask
+from flask import Flask, request, url_for
 from flask_minify import Minify
 from markupsafe import escape, Markup
 from models.ticket import db  # Importação do objeto db
 import re
+from urllib.parse import urlencode
 
 def create_app():
     app = Flask(__name__)
@@ -15,6 +16,9 @@ def create_app():
 
     # Inicializa o banco de dados com o app
     db.init_app(app)
+
+    # --- HABILITA A EXTENSÃO 'do' PARA O JINJA ---
+    app.jinja_env.add_extension('jinja2.ext.do')
 
     # --- NOVO FILTRO PARA TRANSFORMAR URLS EM LINKS ---
     def autolink(value):
@@ -34,6 +38,19 @@ def create_app():
         # Converte quebras de linha para <br>
         html = linked_text.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>')
         return Markup(html)
+        # Helper para gerar URL mantendo os query params (preserva múltiplos valores)
+    def url_for_with_query(endpoint, **overrides):
+        # pega todos os args como listas
+        args = request.args.to_dict(flat=False)
+        # sobrescreve/adicona os parâmetros passados (aceita str ou lista)
+        for k, v in overrides.items():
+            args[k] = v if isinstance(v, (list, tuple)) else [v]
+        # monta a query string preservando múltiplos valores
+        query = urlencode(args, doseq=True)
+        base = url_for(endpoint)
+        return base + ('?' + query if query else '')
+
+    app.jinja_env.globals['url_for_with_query'] = url_for_with_query
 
     app.jinja_env.filters['nl2br'] = nl2br
     app.jinja_env.filters['autolink'] = autolink
