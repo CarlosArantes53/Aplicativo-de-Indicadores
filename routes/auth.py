@@ -26,6 +26,7 @@ def login():
                 'uid': uid,
                 'email': user_auth_data['email'],
                 'idToken': id_token,
+                'refreshToken': user_auth_data['refreshToken'], 
                 'roles': user_db_data.get('roles', {}) if user_db_data else {}
             }
             return redirect(url_for('main.home'))

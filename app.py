@@ -1,26 +1,36 @@
 import os
-from flask import Flask, request, url_for
+from flask import Flask, request, url_for, session, flash, redirect
 from flask_minify import Minify
 from markupsafe import escape, Markup
-from models.ticket import db  # Importação do objeto db
+from models.ticket import db
 import re
 from urllib.parse import urlencode
+from config import auth
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = os.getenv('FLASK_SECRET_KEY')
     
-    # Configuração do Banco de Dados SQLAlchemy
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///tickets.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    # Inicializa o banco de dados com o app
     db.init_app(app)
-
-    # --- HABILITA A EXTENSÃO 'do' PARA O JINJA ---
     app.jinja_env.add_extension('jinja2.ext.do')
 
-    # --- NOVO FILTRO PARA TRANSFORMAR URLS EM LINKS ---
+    @app.before_request
+    def refresh_firebase_token():
+        if 'user' in session and 'refreshToken' in session['user']:
+            try:
+                user_auth_data = auth.refresh(session['user']['refreshToken'])
+                
+                session['user']['idToken'] = user_auth_data['idToken']
+                session['user']['refreshToken'] = user_auth_data['refreshToken']
+                session.modified = True 
+                
+            except Exception as e:
+                flash('Sua sessão expirou. Por favor, faça login novamente.', 'warning')
+                session.pop('user', None)
+                if request.endpoint and 'login' not in request.endpoint and 'static' not in request.endpoint:
+                    return redirect(url_for('auth.login'))
     def autolink(value):
         if not value:
             return ''
