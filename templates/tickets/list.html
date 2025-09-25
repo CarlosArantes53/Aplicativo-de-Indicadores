@@ -3,7 +3,6 @@
 {% block title %}Meus Chamados{% endblock %}
 
 {% block content %}
-    <h1>Meus Chamados</h1>
     <a href="{{ url_for('tickets.create_ticket') }}" class="btn">Abrir Novo Chamado</a>
 
     {# --- Formulário de Filtros --- #}
@@ -49,7 +48,19 @@
             {% for ticket in tickets %}
             <div class="ticket-item" data-href="{{ url_for('tickets.view_ticket', ticket_id=ticket.id) }}">
                 <div class="ticket-main-line">
-                    <h4 class="ticket-title" title="{{ ticket.title }}">#{{ ticket.id }} - {{ ticket.title }} </h4>
+                    <h4 class="ticket-title" title="{{ ticket.title }}">
+                        {% if ticket.ticket_type == 'projeto' %}
+                            🚀
+                        {% else %}
+                            📁
+                        {% endif %}
+                        #{{ ticket.id }} - {{ ticket.title }}
+                    </h4>
+                    {% if ticket.ticket_type == 'projeto' %}
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: {{ ticket.progress }}%;"></div>
+                    </div>
+                    {% endif %}
                     <span class="urgency-badge urgency-{{ ticket.urgency.lower().replace('é', 'e').replace('í', 'i') }}">{{ ticket.urgency }}</span>
                 </div>
                 <div class="ticket-meta-line">

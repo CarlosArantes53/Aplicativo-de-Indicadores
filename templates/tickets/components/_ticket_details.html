@@ -1,10 +1,10 @@
 <div class="box-container" style="margin-top: 2rem;">
-    <h3 class="ticket-detail-title">{{ ticket.title }}</h3>
+    <h3 class="ticket-detail-title">#{{ ticket.id }} - {{ ticket.title }}</h3>
     <p style="margin-top: 1rem;"><strong>Status:</strong> {{ ticket.status }}</p>
     <p><strong>Setor:</strong> {{ ticket.sector }}</p>
     <p><strong>Urgência:</strong> {{ ticket.urgency }}</p>
-    <p><strong>Prazo:</strong> {{ ticket.deadline.strftime('%d/%m/%Y %H:%M') if ticket.deadline else 'Não definido' }}</p>
-    <p><strong>Atribuído a:</strong> {{ ticket.assigned_user_email or 'Ninguém' }}</p>
+    <p><strong>Prazo:</strong> {{ ticket.deadline.strftime('%d/%m/%Y %H:%M') if ticket.deadline else '-' }}</p>
+    <p><strong>Atribuído a:</strong> {{ ticket.assigned_user_email or '-' }}</p>
     <p><strong>Descrição:</strong><br>{{ ticket.description|nl2br }}</p>
     
 </div>

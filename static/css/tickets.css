@@ -46,7 +46,6 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23cbd5e0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.2rem center;
     background-repeat: no-repeat;
     background-size: 1.2em 1.2em;
@@ -193,4 +192,60 @@
     overflow-wrap: break-word;
     word-wrap: break-word; /* Para compatibilidade com navegadores mais antigos */
     word-break: break-word; /* Garante a quebra em cenários mais agressivos */
+}
+/* Estilos para as Etapas do Projeto */
+.project-stages-container {
+    margin-top: 2rem;
+}
+
+.project-stage {
+    background-color: var(--primary-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.project-stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.project-stage-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.stage-status {
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+}
+
+.stage-status-pendente { background-color: #f59e0b; }
+.stage-status-em-andamento { background-color: #3b82f6; }
+.stage-status-concluido { background-color: #10b981; }
+
+.project-stage-details {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.progress-bar-container {
+    width: 100px;
+    height: 10px;
+    background-color: var(--primary-bg);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-left: 1rem;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #10b981;
+    border-radius: 5px;
+    transition: width 0.3s ease-in-out;
 }

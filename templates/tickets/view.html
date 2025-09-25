@@ -27,7 +27,6 @@
 {% endmacro %}
 
 {% block content %}
-<h1>Detalhes do Chamado #{{ ticket.id }}</h1>
 
 {% include 'tickets/components/_ticket_details.html' %}
 
@@ -35,8 +34,51 @@
     {% include 'tickets/components/_admin_actions.html' %}
 {% endif %}
 
+{% if ticket.ticket_type == 'projeto' %}
+<div class="box-container project-stages-container">
+    <h3>Etapas do Projeto</h3>
+    {% for stage in ticket.project_stages %}
+    <div class="project-stage">
+        <div class="project-stage-header">
+            <span class="project-stage-name">{{ stage.name }}</span>
+            <div class="stage-actions">
+                {% if is_admin %}
+                <form method="post" style="display: inline-block;">
+                    <input type="hidden" name="form_action" value="update_stage_status">
+                    <input type="hidden" name="stage_id" value="{{ stage.id }}">
+                    <select name="new_status" class="interaction-status-select" onchange="this.form.submit()">
+                        <option value="Pendente" {% if stage.status == 'Pendente' %}selected{% endif %}>Pendente</option>
+                        <option value="Em Andamento" {% if stage.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                        <option value="Concluído" {% if stage.status == 'Concluído' %}selected{% endif %}>Concluído</option>
+                    </select>
+                </form>
+                {% endif %}
+                <span class="stage-status stage-status-{{ stage.status|lower|replace(' ', '-') }}">{{ stage.status }}</span>
+            </div>
+        </div>
+        <div class="project-stage-details">
+            Prazo: {{ stage.deadline.strftime('%d/%m/%Y %H:%M') if stage.deadline else 'Não definido' }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <div class="box-container" style="margin-top: 2rem;">
-    <h3>Histórico de Interações</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>Histórico de Interações</h3>
+        {% if ticket.ticket_type == 'projeto' %}
+        <form method="get" id="stage_filter_form">
+            <select name="stage_filter" id="stage_filter" class="interaction-status-select" onchange="this.form.submit()">
+                <option value="">Todas as Etapas</option>
+                <option value="geral" {% if stage_filter == 'geral' %}selected{% endif %}>Geral</option>
+                {% for stage in ticket.project_stages %}
+                    <option value="{{ stage.id }}" {% if stage_filter == stage.id|string %}selected{% endif %}>{{ stage.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% endif %}
+    </div>
     
     {% macro render_interaction(interaction, ticket_user_email, current_user_is_admin) %}
         {% set is_validation_request = interaction.action_type == 'request_validation' %}
@@ -48,6 +90,7 @@
             
             <p>
                 <strong>{{ interaction.user_email }}</strong> em {{ interaction.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                {% if interaction.stage %} em <strong>{{ interaction.stage.name }}</strong>{% endif %}
                 {% if is_validation_request %}
                     - <span class="status-badge validation-{{ validation_status }}-badge">{{ validation_status|capitalize }}</span>
                     {% if current_user_is_admin %}
@@ -117,12 +160,12 @@
     {% endmacro %}
 
     {# Loop Principal #}
-    {% if ticket.interactions|length > 0 %}
-        {% for interaction in ticket.interactions %}
+    {% if interactions|length > 0 %}
+        {% for interaction in interactions %}
             {{ render_interaction(interaction, ticket.user_email, is_admin) }}
         {% endfor %}
     {% else %}
-        <p>Nenhuma interação ainda.</p>
+        <p>Nenhuma interação encontrada com o filtro aplicado.</p>
     {% endif %}
 
     {% include 'tickets/components/_interaction_form.html' %}

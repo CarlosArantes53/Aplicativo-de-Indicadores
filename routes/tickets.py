@@ -54,16 +54,25 @@ def list_tickets():
 @login_required
 def create_ticket():
     if request.method == 'POST':
-        # ... (código existente sem alterações)
         try:
+            stages = []
+            if request.form.get('ticket_type') == 'projeto':
+                stage_names = request.form.getlist('stage_name[]')
+                stage_deadlines = request.form.getlist('stage_deadline[]')
+                for name, deadline in zip(stage_names, stage_deadlines):
+                    if name: # Adiciona apenas se o nome da etapa não estiver vazio
+                        stages.append({'name': name, 'deadline': deadline})
+
             ticket_service.create_ticket(
-                request.form.get('title'),
-                request.form.get('urgency'),
-                request.form.get('sector'),
-                request.form.get('description'),
-                session['user']['email'],
-                request.files.getlist('attachments'),
-                request.form.get('deadline')
+                title=request.form.get('title'),
+                urgency=request.form.get('urgency'),
+                sector=request.form.get('sector'),
+                description=request.form.get('description'),
+                user_email=session['user']['email'],
+                attachments=request.files.getlist('attachments'),
+                deadline=request.form.get('deadline'),
+                ticket_type=request.form.get('ticket_type'),
+                stages=stages
             )
             flash('Chamado criado com sucesso!', 'success')
             return redirect(url_for('tickets.list_tickets'))
@@ -118,10 +127,31 @@ def view_ticket(ticket_id):
             new_status = request.form.get('new_status')
             ticket_service.update_interaction_status(interaction_id, new_status, user_email)
             flash('Status da ação atualizado!', 'success')
+            
+        elif form_action == 'update_stage_status' and is_admin:
+            stage_id = request.form.get('stage_id')
+            new_status = request.form.get('new_status')
+            ticket_service.update_project_stage_status(stage_id, new_status)
+            flash('Status da etapa atualizado!', 'success')
+
 
         return redirect(url_for('tickets.view_ticket', ticket_id=ticket_id))
+    
+    stage_filter = request.args.get('stage_filter')
+    interactions = ticket.interactions
+    if stage_filter and stage_filter.isdigit():
+        interactions = [i for i in ticket.interactions if i.project_stage_id == int(stage_filter)]
+    elif stage_filter == 'geral':
+        interactions = [i for i in ticket.interactions if i.project_stage_id is None]
 
-    return render_template('tickets/view.html', ticket=ticket, is_admin=is_admin, all_users=all_users, now=datetime.now())
+
+    return render_template('tickets/view.html', 
+                           ticket=ticket, 
+                           is_admin=is_admin, 
+                           all_users=all_users, 
+                           now=datetime.now(),
+                           interactions=interactions,
+                           stage_filter=stage_filter)
 
 
 

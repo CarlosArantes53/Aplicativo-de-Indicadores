@@ -4,6 +4,14 @@ from datetime import datetime
 db = SQLAlchemy()
 
 
+class ProjectStage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
+    name = db.Column(db.String(150), nullable=False)
+    deadline = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(50), default='Pendente') # Pendente, Em Andamento, Concluído
+    interactions = db.relationship('Interaction', backref='stage', lazy=True)
+
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(150), nullable=False)
@@ -17,10 +25,22 @@ class Ticket(db.Model):
     deadline = db.Column(db.DateTime, nullable=True)
     assigned_user_email = db.Column(db.String(120), nullable=True)
     
+    ticket_type = db.Column(db.String(50), default='chamado') # chamado ou projeto
+    
     attachments = db.relationship('Attachment', backref='ticket', lazy=True, cascade="all, delete-orphan")
     interactions = db.relationship('Interaction', backref='ticket', lazy=True, cascade="all, delete-orphan", 
                                    order_by='Interaction.timestamp',
                                    primaryjoin="Interaction.ticket_id == Ticket.id and Interaction.parent_id == None")
+    
+    project_stages = db.relationship('ProjectStage', backref='ticket', lazy=True, cascade="all, delete-orphan")
+    
+    @property
+    def progress(self):
+        if self.ticket_type != 'projeto' or not self.project_stages:
+            return 0
+        completed_stages = [s for s in self.project_stages if s.status == 'Concluído']
+        return (len(completed_stages) / len(self.project_stages)) * 100 if self.project_stages else 0
+
 
 class Interaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,6 +55,8 @@ class Interaction(db.Model):
     # NOVOS CAMPOS PARA SUB-TAREFAS E PRAZOS
     deadline = db.Column(db.DateTime, nullable=True)
     parent_id = db.Column(db.Integer, db.ForeignKey('interaction.id'), nullable=True)
+    
+    project_stage_id = db.Column(db.Integer, db.ForeignKey('project_stage.id'), nullable=True)
     
     attachments = db.relationship('Attachment', backref='interaction', lazy=True, cascade="all, delete-orphan")
     children = db.relationship('Interaction', backref=db.backref('parent', remote_side=[id]),

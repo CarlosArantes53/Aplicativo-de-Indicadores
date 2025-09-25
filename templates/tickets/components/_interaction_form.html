@@ -1,5 +1,18 @@
 <form method="post" style="margin-top: 2rem;" enctype="multipart/form-data">
     <input type="hidden" name="form_action" value="add_interaction">
+    
+    {% if ticket.ticket_type == 'projeto' %}
+    <div class="input-group">
+        <label for="project_stage_id">Etapa do Projeto:</label>
+        <select id="project_stage_id" name="project_stage_id">
+            <option value="">Geral</option>
+            {% for stage in ticket.project_stages %}
+                <option value="{{ stage.id }}">{{ stage.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+
     <div class="input-group">
         <label for="reply_text">Adicionar Interação:</label>
         <textarea id="reply_text" name="reply_text" rows="4" required></textarea>

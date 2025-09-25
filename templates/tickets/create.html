@@ -6,6 +6,14 @@
 <h1>Abrir Novo Chamado</h1>
 <form method="post" enctype="multipart/form-data" class="user-form">
     <div class="input-group">
+        <label for="ticket_type">Tipo:</label>
+        <select id="ticket_type" name="ticket_type" required>
+            <option value="chamado">Chamado</option>
+            <option value="projeto">Projeto</option>
+        </select>
+    </div>
+
+    <div class="input-group">
         <label for="title">Título:</label>
         <input type="text" id="title" name="title" required>
     </div>
@@ -40,6 +48,14 @@
         <label for="deadline">Prazo Final (Opcional):</label>
         <input type="datetime-local" id="deadline" name="deadline" min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
     </div>
+    
+    <div id="project_stages_container" style="display: none;">
+        <h3>Etapas do Projeto</h3>
+        <div id="stages_list">
+            </div>
+        <button type="button" id="add_stage" class="btn btn-secondary">Adicionar Etapa</button>
+    </div>
+
 
     <div class="input-group">
         <label for="attachments">Anexos (Opcional):</label>
@@ -51,4 +67,36 @@
         <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-secondary">Cancelar</a>
     </div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ticketTypeSelect = document.getElementById('ticket_type');
+        const projectStagesContainer = document.getElementById('project_stages_container');
+        const addStageButton = document.getElementById('add_stage');
+        const stagesList = document.getElementById('stages_list');
+
+        ticketTypeSelect.addEventListener('change', function() {
+            if (this.value === 'projeto') {
+                projectStagesContainer.style.display = 'block';
+            } else {
+                projectStagesContainer.style.display = 'none';
+            }
+        });
+
+        addStageButton.addEventListener('click', function() {
+            const stageCount = stagesList.children.length;
+            const newStage = document.createElement('div');
+            newStage.classList.add('input-group');
+            newStage.innerHTML = `
+                <label for="stage_name_${stageCount}">Nome da Etapa:</label>
+                <input type="text" id="stage_name_${stageCount}" name="stage_name[]" required>
+                <label for="stage_deadline_${stageCount}">Prazo da Etapa (Opcional):</label>
+                <input type="datetime-local" id="stage_deadline_${stageCount}" name="stage_deadline[]">
+            `;
+            stagesList.appendChild(newStage);
+        });
+    });
+</script>
 {% endblock %}

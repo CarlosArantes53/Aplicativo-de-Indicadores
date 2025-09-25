@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from models.ticket import db, Ticket, Interaction, Attachment
+from models.ticket import db, Ticket, Interaction, Attachment, ProjectStage
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import desc, asc
 
@@ -91,7 +91,7 @@ def get_ticket_by_id(ticket_id):
     """Busca um ticket pelo seu ID."""
     return Ticket.query.get(ticket_id)
 
-def add_interaction(ticket_id, user_email, action_type, text=None, interaction_data=None, deadline=None, parent_id=None):
+def add_interaction(ticket_id, user_email, action_type, text=None, interaction_data=None, deadline=None, parent_id=None, project_stage_id=None):
     """Cria uma nova interação para um chamado."""
     deadline_obj = None
     if deadline:
@@ -107,7 +107,8 @@ def add_interaction(ticket_id, user_email, action_type, text=None, interaction_d
         text=text,
         interaction_data=interaction_data,
         deadline=deadline_obj,
-        parent_id=parent_id
+        parent_id=parent_id,
+        project_stage_id=project_stage_id
     )
     db.session.add(interaction)
     db.session.commit()
@@ -120,6 +121,7 @@ def process_new_interaction(ticket_id, user_email, form_data, files):
     deadline = form_data.get('interaction_deadline')
     external_system = form_data.get('external_system')
     external_ticket_id = form_data.get('external_ticket_id')
+    project_stage_id = form_data.get('project_stage_id')
     
     interaction_data = {}
     if external_system or external_ticket_id:
@@ -131,12 +133,14 @@ def process_new_interaction(ticket_id, user_email, form_data, files):
         new_interaction = add_interaction(
             ticket_id, user_email, action_type='request_validation',
             text=text, deadline=deadline,
-            interaction_data=interaction_data
+            interaction_data=interaction_data,
+            project_stage_id=project_stage_id
         )
     else: # Ação padrão é 'comment'
         new_interaction = add_interaction(
             ticket_id, user_email, action_type='comment', text=text,
-            interaction_data=interaction_data if interaction_data else None
+            interaction_data=interaction_data if interaction_data else None,
+            project_stage_id=project_stage_id
         )
 
     if files:
@@ -165,12 +169,13 @@ def process_validation_response(ticket_id, user_email, form_data):
         user_email=user_email,
         action_type='provide_validation',
         parent_id=parent_interaction_id,
-        interaction_data={'validation_status': validation_status}
+        interaction_data={'validation_status': validation_status},
+        project_stage_id=parent_interaction.project_stage_id
     )
     db.session.commit()
 
-def create_ticket(title, urgency, sector, description, user_email, attachments=None, deadline=None):
-    """Cria um novo chamado e o salva no banco de dados."""
+def create_ticket(title, urgency, sector, description, user_email, attachments=None, deadline=None, ticket_type='chamado', stages=None):
+    """Cria um novo chamado ou projeto e o salva no banco de dados."""
     deadline_obj = None
     if deadline:
         try:
@@ -186,11 +191,29 @@ def create_ticket(title, urgency, sector, description, user_email, attachments=N
         user_email=user_email,
         status='Aberto',
         created_at=datetime.utcnow(),
-        deadline=deadline_obj
+        deadline=deadline_obj,
+        ticket_type=ticket_type
     )
 
     db.session.add(new_ticket)
     db.session.commit()
+
+    if ticket_type == 'projeto' and stages:
+        for stage_data in stages:
+            stage_deadline = None
+            if stage_data['deadline']:
+                try:
+                    stage_deadline = datetime.fromisoformat(stage_data['deadline'])
+                except ValueError:
+                    stage_deadline = None
+            
+            new_stage = ProjectStage(
+                ticket_id=new_ticket.id,
+                name=stage_data['name'],
+                deadline=stage_deadline
+            )
+            db.session.add(new_stage)
+        db.session.commit()
 
     if attachments:
         attachment_objects = _save_attachments(attachments, ticket_id=new_ticket.id)
@@ -241,3 +264,12 @@ def update_interaction_status(interaction_id, new_status, user_email):
     )
     db.session.commit()
     return True
+
+def update_project_stage_status(stage_id, new_status):
+    """Atualiza o status de uma etapa do projeto."""
+    stage = ProjectStage.query.get(stage_id)
+    if stage:
+        stage.status = new_status
+        db.session.commit()
+        return True
+    return False
