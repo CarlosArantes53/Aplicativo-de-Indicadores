@@ -15,7 +15,7 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def _save_attachments(files, ticket_id, interaction_id=None):
+def _save_attachments(files, ticket_id, interaction_id=None, project_stage_id=None):
     """Salva os arquivos de anexo e retorna os objetos Attachment."""
     attachment_objects = []
     for file in files:
@@ -25,6 +25,8 @@ def _save_attachments(files, ticket_id, interaction_id=None):
             
             if interaction_id:
                 filename = f"{ticket_id}_interaction_{interaction_id}_{timestamp}_{original_filename}"
+            elif project_stage_id:
+                filename = f"{ticket_id}_stage_{project_stage_id}_{timestamp}_{original_filename}"
             else:
                 filename = f"{ticket_id}_ticket_{timestamp}_{original_filename}"
                 
@@ -35,7 +37,8 @@ def _save_attachments(files, ticket_id, interaction_id=None):
                 filepath=filepath,
                 filename=original_filename,
                 ticket_id=ticket_id,
-                interaction_id=interaction_id
+                interaction_id=interaction_id,
+                project_stage_id=project_stage_id
             )
             attachment_objects.append(new_attachment)
     return attachment_objects
@@ -213,7 +216,14 @@ def create_ticket(title, urgency, sector, description, user_email, attachments=N
                 deadline=stage_deadline
             )
             db.session.add(new_stage)
-        db.session.commit()
+            db.session.commit()
+
+            if 'files' in stage_data and stage_data['files']:
+                attachment_objects = _save_attachments(stage_data['files'], ticket_id=new_ticket.id, project_stage_id=new_stage.id)
+                for att in attachment_objects:
+                    db.session.add(att)
+                db.session.commit()
+
 
     if attachments:
         attachment_objects = _save_attachments(attachments, ticket_id=new_ticket.id)
@@ -270,6 +280,86 @@ def update_project_stage_status(stage_id, new_status):
     stage = ProjectStage.query.get(stage_id)
     if stage:
         stage.status = new_status
+        db.session.commit()
+        return True
+    return False
+
+def add_project_stage(ticket_id, name, deadline, files=None):
+    """Adiciona uma nova etapa a um projeto existente."""
+    ticket = get_ticket_by_id(ticket_id)
+    if not ticket or ticket.ticket_type != 'projeto':
+        return None
+
+    deadline_obj = None
+    if deadline:
+        try:
+            deadline_obj = datetime.fromisoformat(deadline)
+        except (ValueError, TypeError):
+            deadline_obj = None
+
+    new_stage = ProjectStage(
+        ticket_id=ticket_id,
+        name=name,
+        deadline=deadline_obj
+    )
+    db.session.add(new_stage)
+    db.session.commit()
+    
+    if files:
+        attachment_objects = _save_attachments(files, ticket_id=ticket.id, project_stage_id=new_stage.id)
+        for att in attachment_objects:
+            db.session.add(att)
+        db.session.commit()
+
+    return new_stage
+
+def update_project_stage(stage_id, name, deadline, files=None):
+    """Atualiza o nome, prazo e anexos de uma etapa do projeto."""
+    stage = ProjectStage.query.get(stage_id)
+    if stage:
+        stage.name = name
+        if deadline:
+            try:
+                stage.deadline = datetime.fromisoformat(deadline)
+            except (ValueError, TypeError):
+                stage.deadline = None
+        else:
+            stage.deadline = None
+        
+        if files:
+            attachment_objects = _save_attachments(files, ticket_id=stage.ticket_id, project_stage_id=stage.id)
+            for att in attachment_objects:
+                db.session.add(att)
+
+        db.session.commit()
+        return True
+    return False
+
+def delete_project_stage(stage_id):
+    """Exclui uma etapa do projeto."""
+    stage = ProjectStage.query.get(stage_id)
+    if stage:
+        Interaction.query.filter_by(project_stage_id=stage_id).update({"project_stage_id": None})
+        
+        for attachment in stage.attachments:
+            if os.path.exists(attachment.filepath):
+                os.remove(attachment.filepath)
+            db.session.delete(attachment)
+            
+        db.session.commit()
+
+        db.session.delete(stage)
+        db.session.commit()
+        return True
+    return False
+
+def delete_attachment(attachment_id):
+    """Exclui um anexo."""
+    attachment = Attachment.query.get(attachment_id)
+    if attachment:
+        if os.path.exists(attachment.filepath):
+            os.remove(attachment.filepath)
+        db.session.delete(attachment)
         db.session.commit()
         return True
     return False

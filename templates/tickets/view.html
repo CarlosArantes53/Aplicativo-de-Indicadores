@@ -38,29 +38,103 @@
 <div class="box-container project-stages-container">
     <h3>Etapas do Projeto</h3>
     {% for stage in ticket.project_stages %}
-    <div class="project-stage">
+    <div class="project-stage" id="stage-{{ stage.id }}">
         <div class="project-stage-header">
             <span class="project-stage-name">{{ stage.name }}</span>
             <div class="stage-actions">
                 {% if is_admin %}
-                <form method="post" style="display: inline-block;">
-                    <input type="hidden" name="form_action" value="update_stage_status">
-                    <input type="hidden" name="stage_id" value="{{ stage.id }}">
-                    <select name="new_status" class="interaction-status-select" onchange="this.form.submit()">
-                        <option value="Pendente" {% if stage.status == 'Pendente' %}selected{% endif %}>Pendente</option>
-                        <option value="Em Andamento" {% if stage.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
-                        <option value="Concluído" {% if stage.status == 'Concluído' %}selected{% endif %}>Concluído</option>
-                    </select>
-                </form>
+                    <button class="btn-icon" onclick="toggleEdit('stage-{{ stage.id }}')">✏️</button>
+                    <form method="post" onsubmit="return confirm('Tem certeza que deseja excluir esta etapa?');">
+                        <input type="hidden" name="form_action" value="delete_stage">
+                        <input type="hidden" name="stage_id" value="{{ stage.id }}">
+                        <button type="submit" class="btn-icon">🗑️</button>
+                    </form>
+                    
+                    <form method="post">
+                        <input type="hidden" name="form_action" value="update_stage_status">
+                        <input type="hidden" name="stage_id" value="{{ stage.id }}">
+                        <div class="status-radio-group">
+                            <button type="submit" name="new_status" value="Pendente" class="status-radio-btn {% if stage.status == 'Pendente' %}active{% endif %}">Pendente</button>
+<button type="submit" name="new_status" value="Finalizado" class="status-radio-btn {% if stage.status == 'Finalizado' %}active{% endif %}">Finalizado</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <span class="stage-status stage-status-{{ stage.status|lower|replace(' ', '-') }}">{{ stage.status }}</span>
                 {% endif %}
-                <span class="stage-status stage-status-{{ stage.status|lower|replace(' ', '-') }}">{{ stage.status }}</span>
             </div>
         </div>
         <div class="project-stage-details">
             Prazo: {{ stage.deadline.strftime('%d/%m/%Y %H:%M') if stage.deadline else 'Não definido' }}
+            {{ render_attachments(stage.attachments) }}
         </div>
+
+        {% if is_admin %}
+        <div class="edit-stage-form" style="display: none; margin-top: 1rem;">
+            <form method="post" enctype="multipart/form-data">
+                <input type="hidden" name="form_action" value="edit_stage">
+                <input type="hidden" name="stage_id" value="{{ stage.id }}">
+                <div class="input-group">
+                    <label>Nome da Etapa</label>
+                    <input type="text" name="stage_name" value="{{ stage.name }}" required>
+                </div>
+                <div class="input-group">
+                    <label>Prazo</label>
+                    <input type="datetime-local" name="stage_deadline" value="{{ stage.deadline.strftime('%Y-%m-%dT%H:%M') if stage.deadline else '' }}">
+                </div>
+
+                <div class="input-group">
+                    <label>Anexos Atuais</label>
+                    {% if stage.attachments %}
+                        <ul class="attachment-list">
+                        {% for attachment in stage.attachments %}
+                            <li>
+                                <span>{{ attachment.filename }}</span>
+                                <form method="post" onsubmit="return confirm('Tem certeza que deseja excluir este anexo?');">
+                                     <input type="hidden" name="form_action" value="delete_attachment">
+                                     <input type="hidden" name="attachment_id" value="{{ attachment.id }}">
+                                     <button type="submit" class="btn-icon">🗑️</button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>Nenhum anexo.</p>
+                    {% endif %}
+                </div>
+
+                <div class="input-group">
+                    <label>Adicionar Novos Anexos</label>
+                    <input type="file" name="stage_attachments" multiple>
+                </div>
+                <button type="submit" class="btn">Salvar</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleEdit('stage-{{ stage.id }}')">Cancelar</button>
+            </form>
+        </div>
+        {% endif %}
     </div>
     {% endfor %}
+
+    {% if is_admin %}
+    <div class="add-stage-form" style="margin-top: 1.5rem;">
+        <h4>Adicionar Nova Etapa</h4>
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="form_action" value="add_stage">
+            <div class="input-group">
+                <label for="stage_name">Nome da Etapa:</label>
+                <input type="text" id="stage_name" name="stage_name" required>
+            </div>
+            <div class="input-group">
+                <label for="stage_deadline">Prazo (Opcional):</label>
+                <input type="datetime-local" id="stage_deadline" name="stage_deadline">
+            </div>
+            <div class="input-group">
+                <label for="stage_attachments">Anexos (Opcional):</label>
+                <input type="file" id="stage_attachments" name="stage_attachments" multiple>
+            </div>
+            <button type="submit" class="btn">Adicionar Etapa</button>
+        </form>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
 
@@ -99,7 +173,7 @@
                             <input type="hidden" name="interaction_id" value="{{ interaction.id }}">
                             <select name="new_status" onchange="this.form.submit()" class="interaction-status-select">
                                 <option value="pending" {% if validation_status == 'pending' %}selected{% endif %}>Pendente</option>
-                                <option value="completed" {% if validation_status == 'completed' %}selected{% endif %}>Concluído</option>
+                                <option value="completed" {% if validation_status == 'completed' %}selected{% endif %}>Finalizado</option>
                                 <option value="canceled" {% if validation_status == 'canceled' %}selected{% endif %}>Cancelado</option>
                             </select>
                         </form>
@@ -197,6 +271,23 @@
 
         container.dataset.slideIndex = index;
         slidesContainer.style.transform = `translateX(-${index * 100}%)`;
+    }
+
+    function toggleEdit(stageId) {
+        const stageElement = document.getElementById(stageId);
+        const header = stageElement.querySelector('.project-stage-header');
+        const details = stageElement.querySelector('.project-stage-details');
+        const form = stageElement.querySelector('.edit-stage-form');
+        
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            header.style.display = 'none';
+            details.style.display = 'none';
+        } else {
+            form.style.display = 'none';
+            header.style.display = 'flex';
+            details.style.display = 'block';
+        }
     }
 </script>
 {% endblock %}

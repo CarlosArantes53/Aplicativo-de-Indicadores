@@ -94,6 +94,8 @@
                 <input type="text" id="stage_name_${stageCount}" name="stage_name[]" required>
                 <label for="stage_deadline_${stageCount}">Prazo da Etapa (Opcional):</label>
                 <input type="datetime-local" id="stage_deadline_${stageCount}" name="stage_deadline[]">
+                <label for="stage_attachments_${stageCount}">Anexos da Etapa (Opcional):</label>
+                <input type="file" id="stage_attachments_${stageCount}" name="stage_attachments_${stageCount}" multiple>
             `;
             stagesList.appendChild(newStage);
         });

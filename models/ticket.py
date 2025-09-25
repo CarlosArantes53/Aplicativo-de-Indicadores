@@ -11,6 +11,7 @@ class ProjectStage(db.Model):
     deadline = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(50), default='Pendente') # Pendente, Em Andamento, Concluído
     interactions = db.relationship('Interaction', backref='stage', lazy=True)
+    attachments = db.relationship('Attachment', backref='project_stage', lazy=True, cascade="all, delete-orphan")
 
 class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -36,7 +37,7 @@ class Ticket(db.Model):
     
     @property
     def completed_stages_count(self):
-        return len([s for s in self.project_stages if s.status == 'Concluído'])
+        return len([s for s in self.project_stages if s.status == 'Finalizado'])
 
     @property
     def total_stages_count(self):
@@ -73,5 +74,6 @@ class Attachment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'))
     interaction_id = db.Column(db.Integer, db.ForeignKey('interaction.id'))
+    project_stage_id = db.Column(db.Integer, db.ForeignKey('project_stage.id'), nullable=True)
     filepath = db.Column(db.String(300), nullable=False)
     filename = db.Column(db.String(150), nullable=False)

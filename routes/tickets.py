@@ -76,9 +76,10 @@ def create_ticket():
             if request.form.get('ticket_type') == 'projeto':
                 stage_names = request.form.getlist('stage_name[]')
                 stage_deadlines = request.form.getlist('stage_deadline[]')
-                for name, deadline in zip(stage_names, stage_deadlines):
-                    if name: # Adiciona apenas se o nome da etapa não estiver vazio
-                        stages.append({'name': name, 'deadline': deadline})
+                for i, (name, deadline) in enumerate(zip(stage_names, stage_deadlines)):
+                    if name:
+                        stage_files = request.files.getlist(f'stage_attachments_{i}')
+                        stages.append({'name': name, 'deadline': deadline, 'files': stage_files})
 
             ticket_service.create_ticket(
                 title=request.form.get('title'),
@@ -150,6 +151,39 @@ def view_ticket(ticket_id):
             new_status = request.form.get('new_status')
             ticket_service.update_project_stage_status(stage_id, new_status)
             flash('Status da etapa atualizado!', 'success')
+            
+        elif form_action == 'add_stage' and is_admin:
+            stage_name = request.form.get('stage_name')
+            stage_deadline = request.form.get('stage_deadline')
+            stage_files = request.files.getlist('stage_attachments')
+            if stage_name:
+                ticket_service.add_project_stage(ticket_id, stage_name, stage_deadline, stage_files)
+                flash('Etapa adicionada com sucesso!', 'success')
+            else:
+                flash('O nome da etapa é obrigatório.', 'danger')
+
+        elif form_action == 'edit_stage' and is_admin:
+            stage_id = request.form.get('stage_id')
+            stage_name = request.form.get('stage_name')
+            stage_deadline = request.form.get('stage_deadline')
+            stage_files = request.files.getlist('stage_attachments')
+            if stage_id and stage_name:
+                ticket_service.update_project_stage(stage_id, stage_name, stage_deadline, stage_files)
+                flash('Etapa atualizada com sucesso!', 'success')
+            else:
+                flash('O nome da etapa é obrigatório.', 'danger')
+
+        elif form_action == 'delete_stage' and is_admin:
+            stage_id = request.form.get('stage_id')
+            if stage_id:
+                ticket_service.delete_project_stage(stage_id)
+                flash('Etapa excluída com sucesso!', 'success')
+
+        elif form_action == 'delete_attachment' and is_admin:
+            attachment_id = request.form.get('attachment_id')
+            if attachment_id:
+                ticket_service.delete_attachment(attachment_id)
+                flash('Anexo excluído com sucesso!', 'success')
 
 
         return redirect(url_for('tickets.view_ticket', ticket_id=ticket_id))

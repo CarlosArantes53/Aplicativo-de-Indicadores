@@ -46,8 +46,6 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0
- 0 20 20'%3e%3cpath stroke='%23cbd5e0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.2rem center;
     background-repeat: no-repeat;
     background-size: 1.2em 1.2em;
@@ -230,7 +228,6 @@
 }
 
 .stage-status-pendente { background-color: #f59e0b; }
-.stage-status-em-andamento { background-color: #3b82f6; }
 .stage-status-concluido { background-color: #10b981; }
 
 .project-stage-details {
@@ -309,3 +306,86 @@
     height: 16px;
 }
 
+/* NOVOS ESTILOS */
+.btn-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0.2rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+}
+
+.btn-icon:hover {
+    color: var(--text-primary);
+}
+
+.attachment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.attachment-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--primary-bg);
+    padding: 0.5rem;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+}
+
+.stage-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+.stage-actions form {
+    margin: 0;
+    padding: 0;
+    display: flex;
+}
+
+.status-radio-group {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.status-radio-btn {
+    background-color: transparent;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: background-color 0.2s, color 0.2s;
+    border-left: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.status-radio-group .status-radio-btn:first-child {
+    border-left: none;
+}
+
+.status-radio-btn:hover:not(.active) {
+    background-color: var(--primary-bg);
+}
+
+.status-radio-btn.active {
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+.status-radio-btn.active[value="Pendente"] {
+    background-color: #f59e0b;
+}
+.status-radio-btn.active[value="Finalizado"] {
+    background-color: #10b981;
+}
