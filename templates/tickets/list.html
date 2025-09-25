@@ -2,23 +2,6 @@
 
 {% block title %}Meus Chamados{% endblock %}
 
-{# --- Helper para gerar links de ordenação (CORRIGIDO) --- #}
-{% macro sortable_header(column_key, column_name, current_sorting, current_filters) %}
-    {% set next_order = 'asc' if current_sorting.by == column_key and current_sorting.order == 'desc' else 'desc' %}
-    {% set sort_indicator = '' %}
-    {% if current_sorting.by == column_key %}
-        {% set sort_indicator = '▲' if current_sorting.order == 'asc' else '▼' %}
-    {% endif %}
-    {# Cria uma cópia dos filtros e remove as chaves de ordenação para evitar conflito #}
-    {% set query_params = current_filters.copy() %}
-    {% set _ = query_params.pop('sort_by', None) %}
-    {% set _ = query_params.pop('order', None) %}
-    <a href="{{ url_for('tickets.list_tickets', sort_by=column_key, order=next_order, **query_params) }}">
-        {{ column_name }} <span class="sort-indicator">{{ sort_indicator }}</span>
-    </a>
-{% endmacro %}
-
-
 {% block content %}
     <h1>Meus Chamados</h1>
     <a href="{{ url_for('tickets.create_ticket') }}" class="btn">Abrir Novo Chamado</a>
@@ -62,39 +45,22 @@
     </div>
     
     {% if tickets %}
-        <div class="box-container" style="padding: 0; overflow-x: auto;">
-            <table class="table-users">
-                <thead>
-                    <tr>
-                        <th class="col-id">{{ sortable_header('id', 'ID', current_sorting, current_filters) }}</th>
-                        {% if is_admin %}
-                        <th class="col-user">Usuário</th>
-                        <th class="col-assignee">Atribuído a</th>
-                        {% endif %}
-                        <th class="col-title">{{ sortable_header('title', 'Título', current_sorting, current_filters) }}</th>
-                        <th class="col-sector">{{ sortable_header('sector', 'Setor', current_sorting, current_filters) }}</th>
-                        <th class="col-urgency">{{ sortable_header('urgency', 'Urgência', current_sorting, current_filters) }}</th>
-                        <th class="col-status">{{ sortable_header('status', 'Status', current_sorting, current_filters) }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ticket in tickets %}
-                    <tr data-href="{{ url_for('tickets.view_ticket', ticket_id=ticket.id) }}">
-                        <td class="col-id">#{{ ticket.id }}</td>
-                        {% if is_admin %}
-                        <td class="col-user" title="{{ ticket.user_email }}">{{ ticket.user_email }}</td>
-                        <td class="col-assignee" title="{{ ticket.assigned_user_email or 'N/A' }}">{{ ticket.assigned_user_email or 'N/A' }}</td>
-                        {% endif %}
-                        <td class="col-title" title="{{ ticket.title }}">{{ ticket.title }}</td>
-                        <td class="col-sector">{{ ticket.sector }}</td>
-                        <td class="col-urgency">
-                            <span class="urgency-badge urgency-{{ ticket.urgency.lower().replace('é', 'e').replace('í', 'i') }}">{{ ticket.urgency }}</span>
-                        </td>
-                        <td class="col-status">{{ ticket.status }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="ticket-list-container">
+            {% for ticket in tickets %}
+            <div class="ticket-item" data-href="{{ url_for('tickets.view_ticket', ticket_id=ticket.id) }}">
+                <div class="ticket-main-line">
+                    <h4 class="ticket-title" title="{{ ticket.title }}">#{{ ticket.id }} - {{ ticket.title }} </h4>
+                    <span class="urgency-badge urgency-{{ ticket.urgency.lower().replace('é', 'e').replace('í', 'i') }}">{{ ticket.urgency }}</span>
+                </div>
+                <div class="ticket-meta-line">
+                    <span>Criado por: <strong>{{ ticket.user_email }}</strong></span>
+                    <span>&bull;</span>
+                    <span>Status: <strong>{{ ticket.status }}</strong></span>
+                    <span>&bull;</span>
+                    <span>Atribuído a: <strong>{{ ticket.assigned_user_email or '-' }}</strong></span>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     {% else %}
         <div class="alert alert-info" style="margin-top: 2rem;">Nenhum chamado encontrado com os filtros aplicados.</div>
@@ -104,7 +70,7 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const rows = document.querySelectorAll('tr[data-href]');
+    const rows = document.querySelectorAll('.ticket-item[data-href]');
     rows.forEach(row => {
         row.addEventListener('click', () => {
             window.location.href = row.dataset.href;

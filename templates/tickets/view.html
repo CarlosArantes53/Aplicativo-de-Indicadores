@@ -27,89 +27,12 @@
 {% endmacro %}
 
 {% block content %}
-<style>
-    .admin-reply, .user-reply {
-        border-radius: 5px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-left: 5px solid;
-    }
-    .admin-reply { background-color: rgba(42, 157, 143, 0.1); border-color: #2a9d8f; }
-    .user-reply { background-color: rgba(238, 155, 0, 0.1); border-color: #ee9b00; }
-    
-    .validation-request { border-left: 5px solid #3b82f6; background-color: rgba(59, 130, 246, 0.1); }
-    .validation-response { margin-top: 1rem; margin-left: 2rem; border-left: 3px solid; }
-    .validation-approved { border-color: #10b981; background-color: rgba(16, 185, 129, 0.1); }
-    .validation-rejected { border-color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
-    
-    .status-badge { color: white; padding: 0.2rem 0.5rem; font-size: 0.8rem; border-radius: 10px; }
-    .validation-pending-badge { background-color: #f59e0b; }
-    .validation-approved-badge { background-color: #10b981; }
-    .validation-rejected-badge { background-color: #ef4444; }
-    .validation-completed-badge { background-color: #2a9d8f; }
-    .validation-canceled-badge { background-color: #4a5568; }
-
-    .external-ticket-link {
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        background-color: var(--primary-bg);
-        padding: 0.3rem 0.8rem;
-        border: 1px solid var(--border-color);
-        border-radius: 5px;
-        display: inline-block;
-        margin-top: 0.5rem;
-    }
-    .external-ticket-link a {
-        color: var(--accent-color);
-        text-decoration: none;
-    }
-     .external-ticket-link a:hover {
-        text-decoration: underline;
-    }
-</style>
-
 <h1>Detalhes do Chamado #{{ ticket.id }}</h1>
 
-<div class="box-container" style="margin-top: 2rem;">
-    <h3>{{ ticket.title }}</h3>
-    <p style="margin-top: 1rem;"><strong>Status:</strong> {{ ticket.status }}</p>
-    <p><strong>Setor:</strong> {{ ticket.sector }}</p>
-    <p><strong>Urgência:</strong> {{ ticket.urgency }}</p>
-    <p><strong>Prazo:</strong> {{ ticket.deadline.strftime('%d/%m/%Y %H:%M') if ticket.deadline else 'Não definido' }}</p>
-    <p><strong>Atribuído a:</strong> {{ ticket.assigned_user_email or 'Ninguém' }}</p>
-    <p><strong>Descrição:</strong><br>{{ ticket.description|nl2br }}</p>
-    
-    {{ render_attachments(ticket.attachments) }}
-</div>
+{% include 'tickets/components/_ticket_details.html' %}
 
 {% if is_admin %}
-<div class="box-container" style="margin-top: 2rem;">
-    <h3>Ações do Administrador</h3>
-    <form method="post" style="margin-top: 1.5rem;">
-        <input type="hidden" name="form_action" value="admin_update">
-        <div class="input-group" style="display: inline-block; margin-right: 1rem;">
-            <label for="status">Alterar Status:</label>
-            <select id="status" name="status">
-                <option value="Aberto" {% if ticket.status == 'Aberto' %}selected{% endif %}>Aberto</option>
-                <option value="Em Andamento" {% if ticket.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
-                <option value="Aguardando Resposta" {% if ticket.status == 'Aguardando Resposta' %}selected{% endif %}>Aguardando Resposta</option>
-                <option value="Fechado" {% if ticket.status == 'Fechado' %}selected{% endif %}>Fechado</option>
-            </select>
-        </div>
-        <div class="input-group" style="display: inline-block; margin-right: 1rem;">
-            <label for="assignee">Atribuir a:</label>
-            <select id="assignee" name="assignee">
-                <option value="">-- Ninguém --</option>
-                {% for user in all_users %}
-                    <option value="{{ user.email }}" {% if ticket.assigned_user_email == user.email %}selected{% endif %}>
-                        {{ user.email }}
-                    </option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn">Atualizar Chamado</button>
-    </form>
-</div>
+    {% include 'tickets/components/_admin_actions.html' %}
 {% endif %}
 
 <div class="box-container" style="margin-top: 2rem;">
@@ -202,48 +125,7 @@
         <p>Nenhuma interação ainda.</p>
     {% endif %}
 
-    {# Formulário de Nova Interação #}
-    <form method="post" style="margin-top: 2rem;" enctype="multipart/form-data">
-        <input type="hidden" name="form_action" value="add_interaction">
-        <div class="input-group">
-            <label for="reply_text">Adicionar Interação:</label>
-            <textarea id="reply_text" name="reply_text" rows="4" required></textarea>
-        </div>
-        
-        {% if is_admin %}
-        <div class="form-grid">
-            <div class="input-group">
-                <label for="action">Tipo de Ação:</label>
-                <select id="action" name="action">
-                    <option value="comment">Comentário</option>
-                    <option value="request_validation">Solicitar Validação</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label for="interaction_deadline">Prazo da Ação (Opcional):</label>
-                <input type="datetime-local" id="interaction_deadline" name="interaction_deadline" min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
-            </div>
-            <div class="input-group">
-                <label for="external_system">Sistema Externo (Opcional):</label>
-                <select name="external_system">
-                    <option value="">Nenhum</option>
-                    <option value="SPS">SPS</option>
-                    <option value="GDC">GDC</option>
-                </select>
-            </div>
-            <div class="input-group">
-                <label for="external_ticket_id">ID ou Link do Chamado Externo:</label>
-                <input type="text" name="external_ticket_id" placeholder="ID ou URL do chamado">
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="input-group">
-            <label for="attachments">Anexos (Opcional):</label>
-            <input type="file" id="attachments" name="attachments" multiple>
-        </div>
-        <button type="submit" class="btn">Enviar</button>
-    </form>
+    {% include 'tickets/components/_interaction_form.html' %}
 </div>
 
 <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-secondary" style="margin-top: 2rem;">Voltar para a Lista</a>

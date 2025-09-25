@@ -1,0 +1,41 @@
+<form method="post" style="margin-top: 2rem;" enctype="multipart/form-data">
+    <input type="hidden" name="form_action" value="add_interaction">
+    <div class="input-group">
+        <label for="reply_text">Adicionar Interação:</label>
+        <textarea id="reply_text" name="reply_text" rows="4" required></textarea>
+    </div>
+    
+    {% if is_admin %}
+    <div class="form-grid">
+        <div class="input-group">
+            <label for="action">Tipo de Ação:</label>
+            <select id="action" name="action">
+                <option value="comment">Comentário</option>
+                <option value="request_validation">Solicitar Validação</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="interaction_deadline">Prazo da Ação (Opcional):</label>
+            <input type="datetime-local" id="interaction_deadline" name="interaction_deadline" min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
+        </div>
+        <div class="input-group">
+            <label for="external_system">Sistema Externo (Opcional):</label>
+            <select name="external_system">
+                <option value="">Nenhum</option>
+                <option value="SPS">SPS</option>
+                <option value="GDC">GDC</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="external_ticket_id">ID ou Link do Chamado Externo:</label>
+            <input type="text" name="external_ticket_id" placeholder="ID ou URL do chamado">
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="input-group">
+        <label for="attachments">Anexos (Opcional):</label>
+        <input type="file" id="attachments" name="attachments" multiple>
+    </div>
+    <button type="submit" class="btn">Enviar</button>
+</form>

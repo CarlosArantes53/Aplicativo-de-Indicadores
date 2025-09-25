@@ -4,7 +4,6 @@ from werkzeug.utils import secure_filename
 from models.ticket import db, Ticket, Interaction, Attachment
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy import desc, asc
-import random
 
 UPLOAD_FOLDER = 'uploads/tickets'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'mp4', 'mov', 'avi'}
@@ -191,3 +190,54 @@ def create_ticket(title, urgency, sector, description, user_email, attachments=N
     )
 
     db.session.add(new_ticket)
+    db.session.commit()
+
+    if attachments:
+        attachment_objects = _save_attachments(attachments, ticket_id=new_ticket.id)
+        if attachment_objects:
+            for att in attachment_objects:
+                db.session.add(att)
+            db.session.commit()
+
+    return new_ticket
+def update_ticket_admin(ticket_id, user_email, new_status=None, new_assignee=None):
+    """Atualiza o status e/ou o responsável do ticket, criando logs de interação."""
+    ticket = get_ticket_by_id(ticket_id)
+    if not ticket:
+        return False
+
+    if new_status and ticket.status != new_status:
+        old_status = ticket.status
+        ticket.status = new_status
+        data = {'old_status': old_status, 'new_status': new_status}
+        add_interaction(ticket_id, user_email, 'status_change', interaction_data=data)
+
+    if new_assignee is not None and ticket.assigned_user_email != new_assignee:
+        old_assignee = ticket.assigned_user_email
+        ticket.assigned_user_email = new_assignee if new_assignee else None
+        data = {'old_assignee': old_assignee, 'new_assignee': new_assignee}
+        add_interaction(ticket_id, user_email, 'assign', interaction_data=data)
+        
+    db.session.commit()
+    return True
+
+def update_interaction_status(interaction_id, new_status, user_email):
+    """Atualiza o status de uma interação de validação."""
+    interaction = Interaction.query.get(interaction_id)
+    if not interaction or interaction.action_type != 'request_validation':
+        return False
+
+    old_status = interaction.interaction_data.get('validation_status', 'pending')
+    interaction.interaction_data['validation_status'] = new_status
+    flag_modified(interaction, "interaction_data")
+    
+    # Cria uma interação filha para registrar a mudança manual
+    add_interaction(
+        ticket_id=interaction.ticket_id,
+        user_email=user_email,
+        action_type='status_change_manual',
+        parent_id=interaction.id,
+        interaction_data={'old_status': old_status, 'new_status': new_status}
+    )
+    db.session.commit()
+    return True

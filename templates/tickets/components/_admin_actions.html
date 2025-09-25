@@ -1,0 +1,27 @@
+<div class="box-container" style="margin-top: 2rem;">
+    <h3>Ações do Administrador</h3>
+    <form method="post" style="margin-top: 1.5rem;">
+        <input type="hidden" name="form_action" value="admin_update">
+        <div class="input-group" style="display: inline-block; margin-right: 1rem;">
+            <label for="status">Alterar Status:</label>
+            <select id="status" name="status">
+                <option value="Aberto" {% if ticket.status == 'Aberto' %}selected{% endif %}>Aberto</option>
+                <option value="Em Andamento" {% if ticket.status == 'Em Andamento' %}selected{% endif %}>Em Andamento</option>
+                <option value="Aguardando Resposta" {% if ticket.status == 'Aguardando Resposta' %}selected{% endif %}>Aguardando Resposta</option>
+                <option value="Fechado" {% if ticket.status == 'Fechado' %}selected{% endif %}>Fechado</option>
+            </select>
+        </div>
+        <div class="input-group" style="display: inline-block; margin-right: 1rem;">
+            <label for="assignee">Atribuir a:</label>
+            <select id="assignee" name="assignee">
+                <option value="">-- Ninguém --</option>
+                {% for user in all_users %}
+                    <option value="{{ user.email }}" {% if ticket.assigned_user_email == user.email %}selected{% endif %}>
+                        {{ user.email }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn">Atualizar Chamado</button>
+    </form>
+</div>
