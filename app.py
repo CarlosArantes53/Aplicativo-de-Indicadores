@@ -6,6 +6,7 @@ from models.ticket import db
 import re
 from urllib.parse import urlencode
 from config import auth
+from datetime import datetime, timedelta
 
 def create_app():
     app = Flask(__name__)
@@ -22,19 +23,27 @@ def create_app():
 
     @app.before_request
     def refresh_firebase_token():
-        if 'user' in session and 'refreshToken' in session['user']:
-            try:
-                user_auth_data = auth.refresh(session['user']['refreshToken'])
-                
-                session['user']['idToken'] = user_auth_data['idToken']
-                session['user']['refreshToken'] = user_auth_data['refreshToken']
-                session.modified = True 
-                
-            except Exception as e:
-                flash('Sua sessão expirou. Por favor, faça login novamente.', 'warning')
-                session.pop('user', None)
-                if request.endpoint and 'login' not in request.endpoint and 'static' not in request.endpoint:
-                    return redirect(url_for('auth.login'))
+        if 'user' in session and 'refreshToken' in session['user'] and 'expires_at' in session['user']:
+            
+            expires_at = datetime.fromisoformat(session['user']['expires_at'])
+            
+            if expires_at < datetime.utcnow() + timedelta(minutes=5):
+                try:
+                    user_auth_data = auth.refresh(session['user']['refreshToken'])
+                    
+                    session['user']['idToken'] = user_auth_data['idToken']
+                    session['user']['refreshToken'] = user_auth_data['refreshToken']
+                    
+                    new_expires_in = int(user_auth_data.get('expiresIn', 3600))
+                    session['user']['expires_at'] = (datetime.utcnow() + timedelta(seconds=new_expires_in)).isoformat()
+                    
+                    session.modified = True 
+                    
+                except Exception as e:
+                    flash('Sua sessão expirou. Por favor, faça login novamente.', 'warning')
+                    session.pop('user', None)
+                    if request.endpoint and 'login' not in request.endpoint and 'static' not in request.endpoint:
+                        return redirect(url_for('auth.login'))
                 
     def autolink(value):
         if not value:

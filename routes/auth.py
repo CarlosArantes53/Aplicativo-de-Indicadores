@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from config import auth
 from models.user import get_user_data
 from decorators import login_required
+from datetime import datetime, timedelta
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -22,12 +23,16 @@ def login():
             
             user_db_data = get_user_data(uid, id_token)
             
+            expires_in = int(user_auth_data.get('expiresIn', 3600))
+            expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+            
             session['user'] = {
                 'uid': uid,
                 'email': user_auth_data['email'],
                 'idToken': id_token,
                 'refreshToken': user_auth_data['refreshToken'], 
-                'roles': user_db_data.get('roles', {}) if user_db_data else {}
+                'roles': user_db_data.get('roles', {}) if user_db_data else {},
+                'expires_at': expires_at.isoformat() # Armazena como string ISO
             }
             return redirect(url_for('main.home'))
         except Exception as e:
