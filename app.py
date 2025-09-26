@@ -11,7 +11,7 @@ def create_app():
     app = Flask(__name__)
     app.secret_key = os.getenv('FLASK_SECRET_KEY')
     
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///tickets.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL_DB')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config.update(
         SESSION_COOKIE_HTTPONLY=True,
@@ -83,4 +83,3 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='RIOFER-0173', port=8753)
