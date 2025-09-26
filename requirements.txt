@@ -6,3 +6,4 @@ pandas
 pyarrow
 Flask-SQLAlchemy
 flask_minify
+Flask-WTF

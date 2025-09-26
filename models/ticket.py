@@ -3,7 +3,6 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
-
 class ProjectStage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
@@ -49,7 +48,6 @@ class Ticket(db.Model):
             return 0
         return (self.completed_stages_count / self.total_stages_count) * 100 if self.project_stages else 0
 
-
 class Interaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
@@ -60,7 +58,6 @@ class Interaction(db.Model):
     text = db.Column(db.Text, nullable=True) 
     interaction_data = db.Column(db.JSON, nullable=True)
     
-    # NOVOS CAMPOS PARA SUB-TAREFAS E PRAZOS
     deadline = db.Column(db.DateTime, nullable=True)
     parent_id = db.Column(db.Integer, db.ForeignKey('interaction.id'), nullable=True)
     

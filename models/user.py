@@ -21,7 +21,6 @@ def create_user_with_data(email, password, roles, admin_token, **kwargs):
         user = auth.create_user_with_email_and_password(email, password)
         uid = user['localId']
         
-        # Converte a lista de roles para um mapa
         roles_map = {role: True for role in roles}
         
         user_data = {
@@ -39,7 +38,6 @@ def create_user_with_data(email, password, roles, admin_token, **kwargs):
 
 def update_user_data(uid, data, token):
     try:
-        # Se 'roles' estiver sendo atualizado, converta para mapa
         if 'roles' in data:
             data['roles'] = {role: True for role in data['roles']}
             

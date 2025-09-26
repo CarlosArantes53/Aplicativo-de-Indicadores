@@ -31,7 +31,7 @@ def login():
             }
             return redirect(url_for('main.home'))
         except Exception as e:
-            error = 'Falha na autenticação. Verifique suas credenciais.'
+            error = 'Falha na autenticação. Verifique email ou senha.'
             
     return render_template('login.html', error=error)
 

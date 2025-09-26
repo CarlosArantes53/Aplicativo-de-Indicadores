@@ -14,28 +14,22 @@ def list_tickets():
     user_roles = session['user'].get('roles', {})
     is_admin = 'admin' in user_roles
 
-    # Opções para os dropdowns / checkboxes de filtro (definidas antes dos args)
     filter_options = {
         'statuses': ['Aberto', 'Em Andamento', 'Aguardando Resposta', 'Fechado'],
         'urgencies': ['Baixa', 'Média', 'Alta', 'Crítica'],
         'sectors': ['TI', 'Financeiro', 'Comercial', 'RH', 'Operacional']
     }
 
-    # --- STATUS (comportamento que você já tinha) ---
     statuses = request.args.getlist('status')
-    # se não veio nenhum parâmetro status (ou seja, 'status' não está na query), aplicar default parcial
     if not statuses and 'status' not in request.args:
         statuses = ['Aberto', 'Em Andamento', 'Aguardando Resposta']
 
-    # --- URGENCY e SECTOR: por padrão marcar todos os filtros ---
     urgencies = request.args.getlist('urgency')
     if not urgencies and 'urgency' not in request.args:
-        # marca todas as urgências por padrão
         urgencies = list(filter_options['urgencies'])
 
     sectors = request.args.getlist('sector')
     if not sectors and 'sector' not in request.args:
-        # marca todos os setores por padrão
         sectors = list(filter_options['sectors'])
 
     filters = {
@@ -44,7 +38,6 @@ def list_tickets():
         'sector': sectors,
         'title': request.args.get('title', '')
     }
-    # Remove chaves vazias para não filtrar por ''
     filters = {k: v for k, v in filters.items() if v}
 
     sorting = {
@@ -64,8 +57,6 @@ def list_tickets():
                            filter_options=filter_options,
                            current_filters=filters,
                            current_sorting=sorting)
-
-
 
 @tickets_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -98,7 +89,6 @@ def create_ticket():
             flash(f'Erro ao criar chamado: {e}', 'danger')
 
     return render_template('tickets/create.html', now=datetime.now())
-
 
 @tickets_bp.route('/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
@@ -195,7 +185,6 @@ def view_ticket(ticket_id):
     elif stage_filter == 'geral':
         interactions = [i for i in ticket.interactions if i.project_stage_id is None]
 
-
     return render_template('tickets/view.html', 
                            ticket=ticket, 
                            is_admin=is_admin, 
@@ -203,8 +192,6 @@ def view_ticket(ticket_id):
                            now=datetime.now(),
                            interactions=interactions,
                            stage_filter=stage_filter)
-
-
 
 @tickets_bp.route('/download/attachment/<int:attachment_id>')
 @login_required

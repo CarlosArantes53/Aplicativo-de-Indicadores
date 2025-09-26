@@ -13,6 +13,10 @@ def create_app():
     
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///tickets.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config.update(
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+    )
     db.init_app(app)
     app.jinja_env.add_extension('jinja2.ext.do')
 
@@ -31,31 +35,25 @@ def create_app():
                 session.pop('user', None)
                 if request.endpoint and 'login' not in request.endpoint and 'static' not in request.endpoint:
                     return redirect(url_for('auth.login'))
+                
     def autolink(value):
         if not value:
             return ''
-        # Expressão regular para encontrar URLs
         url_pattern = re.compile(r'((?:https?://|www\.)[^\s<]+[^<.,:;"\'\]\s])')
-        # Substitui cada URL encontrada por uma tag <a>
         html = url_pattern.sub(r'<a href="\1" target="_blank">\1</a>', escape(value))
         return Markup(html)
 
     def nl2br(value):
         if value is None:
             return ''
-        # Aplica o autolink antes de converter quebras de linha
         linked_text = autolink(value)
-        # Converte quebras de linha para <br>
         html = linked_text.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '<br/>')
         return Markup(html)
-        # Helper para gerar URL mantendo os query params (preserva múltiplos valores)
+    
     def url_for_with_query(endpoint, **overrides):
-        # pega todos os args como listas
         args = request.args.to_dict(flat=False)
-        # sobrescreve/adicona os parâmetros passados (aceita str ou lista)
         for k, v in overrides.items():
             args[k] = v if isinstance(v, (list, tuple)) else [v]
-        # monta a query string preservando múltiplos valores
         query = urlencode(args, doseq=True)
         base = url_for(endpoint)
         return base + ('?' + query if query else '')
@@ -64,7 +62,6 @@ def create_app():
 
     app.jinja_env.filters['nl2br'] = nl2br
     app.jinja_env.filters['autolink'] = autolink
-    # --- FIM DO NOVO FILTRO ---
 
     if not app.config.get('DEBUG', False):
         Minify(app=app, html=True, js=True, cssless=True)
@@ -86,4 +83,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='RIOFER-0173', port=8753)
